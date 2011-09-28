@@ -1,0 +1,7 @@
+Format-Specification: http://www.debian.org/doc/packaging-manuals/copyright-format/1.0/
+
+Files: *
+Copyright: 2012-2013 Spotify AB
+License: Apache-2.0
+ On Debian systems, the full text of the Apache 2.0 license can be found in the
+ file `/usr/share/common-licenses/Apache-2.0'.

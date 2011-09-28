@@ -1,0 +1,3 @@
+usr/include/sparkey/*
+usr/lib/*.a
+usr/lib/*.so
