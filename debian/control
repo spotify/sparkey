@@ -1,0 +1,58 @@
+Source: sparkey
+Section: libs
+Priority: extra
+Maintainer: Kristofer Karlsson <krka@spotify.com>
+Build-Depends: debhelper (>= 7.0.50), dh-autoreconf, doxygen, zip, libsnappy1, libsnappy-dev
+Standards-Version: 3.9.1
+
+Package: libsparkey0
+Section: libs
+Architecture: any
+Depends: ${misc:Depends}, ${shlibs:Depends}
+Description: Sparkey library
+ Sparkey is a simple constant key/value storage library. It is best suited for
+ read heavy systems with infrequent big bulk inserts.
+ .
+ This is the runtime package for programs that use the sparkey library.
+
+Package: libsparkey-dev
+Section: libdevel
+Architecture: any
+Depends: libsparkey0 (= ${binary:Version}), ${misc:Depends}
+Description: Sparkey headers and libraries for development
+ Sparkey is a simple constant key/value storage library. It is best suited for
+ read heavy systems with infrequent big bulk inserts.
+ .
+ This is the development package containing headers and static libraries for
+ sparkey.
+
+Package: libsparkey-dbg
+Section: debug
+Architecture: any
+Depends: libsparkey0 (= ${binary:Version}), ${misc:Depends}
+Description: Sparkey library: debug symbols
+ Sparkey is a simple constant key/value storage library. It is best suited for
+ read heavy systems with infrequent big bulk inserts.
+ .
+ This package contains debug symbols for the sparkey library.
+
+Package: sparkey-doc
+Architecture: all
+Section: doc
+Depends: ${misc:Depends}
+Description: Sparkey API documentation
+ Sparkey is a simple constant key/value storage library. It is best suited for
+ read heavy systems with infrequent big bulk inserts.
+ .
+ This is the API documentation for the sparkey library.
+
+Package: sparkey-bin
+Section: utils
+Architecture: any
+Depends: ${shlibs:Depends}, ${misc:Depends}
+Description: Sparkey command line utility
+ Sparkey is a simple constant key/value storage library. It is best suited for
+ read heavy systems with infrequent big bulk inserts.
+ .
+ This is the command line utility for getting info about and extracting data
+ from sparkey index and log files.

@@ -1,0 +1,9 @@
+Sparkey
+Copyright 2012-2013 Spotify AB
+
+This product includes software developed at
+Spotify AB (http://www.spotify.com/).
+
+This project includes MurmurHash3, written by Austin Appleby, which is
+placed in the public domain. The original software is available from
+  https://code.google.com/p/smhasher/source/browse/trunk/MurmurHash3.cpp
