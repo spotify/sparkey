@@ -112,7 +112,7 @@ A very simple benchmark program is included - see src/bench.c.
 The program is designed to be easily extended to measure other key value stores if anyone wants to.
 Running it on a production-like server (Intel(R) Xeon(R) CPU L5630 @ 2.13GHz) we get the following:
 
-    Testing bulk insert of 1000 elements and 1000000 random lookups
+    Testing bulk insert of 1000 elements and 1000.000 random lookups
       Candidate: Sparkey
         creation time (wall):     0.00
         creation time (cpu):      0.00
@@ -122,7 +122,7 @@ Running it on a production-like server (Intel(R) Xeon(R) CPU L5630 @ 2.13GHz) we
         lookup time (cpu):           0.58
         throughput (lookups/cpusec): 1724692.62
 
-    Testing bulk insert of 1000000 elements and 1000000 random lookups
+    Testing bulk insert of 1000.000 elements and 1000.000 random lookups
       Candidate: Sparkey
         creation time (wall):     0.50
         creation time (cpu):      0.69
@@ -132,7 +132,7 @@ Running it on a production-like server (Intel(R) Xeon(R) CPU L5630 @ 2.13GHz) we
         lookup time (cpu):           0.78
         throughput (lookups/cpusec): 1284477.75
 
-    Testing bulk insert of 10000000 elements and 1000000 random lookups
+    Testing bulk insert of 10.000.000 elements and 1000.000 random lookups
       Candidate: Sparkey
         creation time (wall):     7.50
         creation time (cpu):      7.73
@@ -142,7 +142,7 @@ Running it on a production-like server (Intel(R) Xeon(R) CPU L5630 @ 2.13GHz) we
         lookup time (cpu):           0.99
         throughput (lookups/cpusec): 1014608.94
 
-    Testing bulk insert of 100000000 elements and 1000000 random lookups
+    Testing bulk insert of 100.000.000 elements and 1000.000 random lookups
       Candidate: Sparkey
         creation time (wall):     82.00
         creation time (cpu):      81.58
@@ -152,7 +152,7 @@ Running it on a production-like server (Intel(R) Xeon(R) CPU L5630 @ 2.13GHz) we
         lookup time (cpu):           1.98
         throughput (lookups/cpusec): 503818.84
 
-    Testing bulk insert of 1000 elements and 1000000 random lookups
+    Testing bulk insert of 1000 elements and 1000.000 random lookups
       Candidate: Sparkey compressed(1024)
         creation time (wall):     0.00
         creation time (cpu):      0.00
@@ -162,7 +162,7 @@ Running it on a production-like server (Intel(R) Xeon(R) CPU L5630 @ 2.13GHz) we
         lookup time (cpu):           3.30
         throughput (lookups/cpusec): 303335.78
 
-    Testing bulk insert of 1000000 elements and 1000000 random lookups
+    Testing bulk insert of 1000.000 elements and 1000.000 random lookups
       Candidate: Sparkey compressed(1024)
         creation time (wall):     0.50
         creation time (cpu):      0.75
@@ -172,7 +172,7 @@ Running it on a production-like server (Intel(R) Xeon(R) CPU L5630 @ 2.13GHz) we
         lookup time (cpu):           2.91
         throughput (lookups/cpusec): 343833.28
 
-    Testing bulk insert of 10000000 elements and 1000000 random lookups
+    Testing bulk insert of 10.000.000 elements and 1000.000 random lookups
       Candidate: Sparkey compressed(1024)
         creation time (wall):     8.50
         creation time (cpu):      8.50
@@ -182,7 +182,7 @@ Running it on a production-like server (Intel(R) Xeon(R) CPU L5630 @ 2.13GHz) we
         lookup time (cpu):           2.99
         throughput (lookups/cpusec): 334490.22
 
-    Testing bulk insert of 100000000 elements and 1000000 random lookups
+    Testing bulk insert of 100.000.000 elements and 1000.000 random lookups
       Candidate: Sparkey compressed(1024)
         creation time (wall):     90.50
         creation time (cpu):      90.46
