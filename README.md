@@ -54,7 +54,7 @@ Some key characteristics:
 What it's not:
 
 * It's not a distributed key value store - it's just a hash table on disk.
-* It's not a compacted data store, but that can be implemented on top of it's needed.
+* It's not a compacted data store, but that can be implemented on top of it, if needed.
 * It's not robust against data corruption.
 
 The usecase we have for it at Spotify is serving data that rarely gets updated to
