@@ -10,8 +10,9 @@ sparkey-internal.h
 
 pkginclude_HEADERS = sparkey.h
 
-bin_PROGRAMS = sparkey
+bin_PROGRAMS = sparkey bench
 sparkey_SOURCES = main.c
+bench_SOURCES = bench.c
 LDADD = libsparkey.la
 
 check_PROGRAMS = testvlq testhash testutil testsystem

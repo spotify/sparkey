@@ -18,6 +18,9 @@ AM_CONDITIONAL([HAVE_DOXYGEN],
 AC_SEARCH_LIBS([snappy_compress],
   [snappy],,[AC_MSG_ERROR([Could not find snappy])
 ])
+AC_SEARCH_LIBS([clock_gettime],
+  [rt],,[AC_MSG_ERROR([Could not find rt])
+])
 AC_CONFIG_FILES([
  Makefile
  src/Makefile

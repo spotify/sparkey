@@ -108,7 +108,90 @@ The result was this project.
 
 Performance
 -----------
-One of these days I'll run some performance benchmarks.
+A very simple benchmark program is included - see src/bench.c.
+The program is designed to be easily extended to measure other key value stores if anyone wants to.
+Running it on a production-like server (Intel(R) Xeon(R) CPU L5630 @ 2.13GHz) we get the following:
+
+    Testing bulk insert of 1000 elements and 1000000 random lookups
+      Candidate: Sparkey
+        creation time (wall):     0.00
+        creation time (cpu):      0.00
+        throughput (puts/cpusec): 1098272.88
+        file size:                28384
+        lookup time (wall):          0.50
+        lookup time (cpu):           0.58
+        throughput (lookups/cpusec): 1724692.62
+
+    Testing bulk insert of 1000000 elements and 1000000 random lookups
+      Candidate: Sparkey
+        creation time (wall):     0.50
+        creation time (cpu):      0.69
+        throughput (puts/cpusec): 1448618.25
+        file size:                34177984
+        lookup time (wall):          1.00
+        lookup time (cpu):           0.78
+        throughput (lookups/cpusec): 1284477.75
+
+    Testing bulk insert of 10000000 elements and 1000000 random lookups
+      Candidate: Sparkey
+        creation time (wall):     7.50
+        creation time (cpu):      7.73
+        throughput (puts/cpusec): 1294209.62
+        file size:                413777988
+        lookup time (wall):          1.00
+        lookup time (cpu):           0.99
+        throughput (lookups/cpusec): 1014608.94
+
+    Testing bulk insert of 100000000 elements and 1000000 random lookups
+      Candidate: Sparkey
+        creation time (wall):     82.00
+        creation time (cpu):      81.58
+        throughput (puts/cpusec): 1225726.75
+        file size:                4337777988
+        lookup time (wall):          2.00
+        lookup time (cpu):           1.98
+        throughput (lookups/cpusec): 503818.84
+
+    Testing bulk insert of 1000 elements and 1000000 random lookups
+      Candidate: Sparkey compressed(1024)
+        creation time (wall):     0.00
+        creation time (cpu):      0.00
+        throughput (puts/cpusec): 1101445.38
+        file size:                19085
+        lookup time (wall):          3.50
+        lookup time (cpu):           3.30
+        throughput (lookups/cpusec): 303335.78
+
+    Testing bulk insert of 1000000 elements and 1000000 random lookups
+      Candidate: Sparkey compressed(1024)
+        creation time (wall):     0.50
+        creation time (cpu):      0.75
+        throughput (puts/cpusec): 1333903.25
+        file size:                19168683
+        lookup time (wall):          3.00
+        lookup time (cpu):           2.91
+        throughput (lookups/cpusec): 343833.28
+
+    Testing bulk insert of 10000000 elements and 1000000 random lookups
+      Candidate: Sparkey compressed(1024)
+        creation time (wall):     8.50
+        creation time (cpu):      8.50
+        throughput (puts/cpusec): 1176634.25
+        file size:                311872187
+        lookup time (wall):          3.00
+        lookup time (cpu):           2.99
+        throughput (lookups/cpusec): 334490.22
+
+    Testing bulk insert of 100000000 elements and 1000000 random lookups
+      Candidate: Sparkey compressed(1024)
+        creation time (wall):     90.50
+        creation time (cpu):      90.46
+        throughput (puts/cpusec): 1105412.00
+        file size:                3162865465
+        lookup time (wall):          3.50
+        lookup time (cpu):           3.60
+        throughput (lookups/cpusec): 277477.41
+
 
 File format details
 -------------------
