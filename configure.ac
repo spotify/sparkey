@@ -19,9 +19,8 @@ AC_SEARCH_LIBS([snappy_compress],
   [snappy],,[AC_MSG_ERROR([Could not find snappy])
 ])
 
-AM_CONDITIONAL([APPLE], [test x$build_vendor = xapple])
-AM_COND_IF([APPLE], [
-],[
+AM_CONDITIONAL([NOT_APPLE], [test x$build_vendor != xapple])
+AM_COND_IF([NOT_APPLE], [
    AC_SEARCH_LIBS([clock_gettime],
      [rt],,[AC_MSG_ERROR([Could not find rt])
    ])
