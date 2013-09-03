@@ -232,5 +232,5 @@ It's very easy to set up the hash table like this, we just need to do insertions
 
 Compression
 -----------
-Sparkey also supports block level compression using google snappy. You select a block size which is then used to split the contents of the log into blocks. Each block is compressed independently with snappy. This can be useful if your bottleneck is file size and there is a lot of redundant data across adjacent entries. The downside of using this is that during lookups, at least one block needs to be decompressed. The larger blocks you choose, the better compression you may get, but you will also have higher lookup cost. This is a tradeoff that needs to be emperically evaluated for each use case.
+Sparkey also supports block level compression using google snappy. You select a block size which is then used to split the contents of the log into blocks. Each block is compressed independently with snappy. This can be useful if your bottleneck is file size and there is a lot of redundant data across adjacent entries. The downside of using this is that during lookups, at least one block needs to be decompressed. The larger blocks you choose, the better compression you may get, but you will also have higher lookup cost. This is a tradeoff that needs to be empirically evaluated for each use case.
 
