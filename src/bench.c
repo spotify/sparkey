@@ -18,7 +18,6 @@
 #include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
-#include <time.h>
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <dirent.h>
@@ -106,17 +105,41 @@ static size_t total_file_size(const char** files) {
   }
 }
 
-float wall() {
+#ifdef __APPLE__
+#include <mach/mach_time.h>
+static float wall() {
+  static double multiplier = 0;
+  if (multiplier <= 0) {
+    mach_timebase_info_data_t info;
+    mach_timebase_info(&info);
+    multiplier = (double) info.numer / (double) info.denom / 1000000000.0;
+  }
+  return (float) (multiplier * mach_absolute_time());
+}
+static float cpu() {
+  return wall();
+}
+
+#else
+
+#include <time.h>
+#ifdef CLOCK_MONOTONIC_RAW
+#define CLOCK_SUITABLE CLOCK_MONOTONIC_RAW
+#else
+#define CLOCK_SUITABLE CLOCK_MONOTONIC
+#endif
+static float wall() {
   struct timespec tp;
-  clock_gettime(CLOCK_MONOTONIC, &tp);
+  clock_gettime(CLOCK_SUITABLE, &tp);
   return tp.tv_sec + 1e-9 * tp.tv_nsec;
 }
 
-float cpu() {
+static float cpu() {
   struct timespec tp;
   clock_gettime(CLOCK_PROCESS_CPUTIME_ID, &tp);
   return tp.tv_sec + 1e-9 * tp.tv_nsec;
 }
+#endif
 
 typedef struct {
   char *name;
@@ -194,7 +217,7 @@ static void sparkey_create_compressed(int n) {
   sparkey_create(n, SPARKEY_COMPRESSION_SNAPPY, 1024);
 }
 
-static const char* sparkey_list[] = {"test.spi", "test.spl", NULL}; 
+static const char* sparkey_list[] = {"test.spi", "test.spl", NULL};
 
 static const char** sparkey_files() {
   return sparkey_list;
@@ -217,7 +240,7 @@ void test(candidate *c, int n, int lookups) {
   rm_all_rec(c->files());
 
   float t1_wall = wall();
-  float t1_cpu = cpu(); 
+  float t1_cpu = cpu();
 
   c->create(n);
 
