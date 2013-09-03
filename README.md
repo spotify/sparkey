@@ -194,8 +194,7 @@ Running it on a production-like server (Intel(R) Xeon(R) CPU L5630 @ 2.13GHz) we
 File format details
 -------------------
 
-Log file format
----------------
+### Log file format
 The contents of the log file starts with a constant size header, describing some metadata about the log file.
 After that is just a sequence of entries, where each entry consists of a type, key and a value.
 
@@ -205,8 +204,7 @@ If A > 0, it's a PUT and the key length is A - 1, and the value length is B.
 
 (It gets slightly more complex if block level compression is used, but we'll ignore that for now.)
 
-Hash file format
-----------------
+### Hash file format
 The contents of the hash file starts with a constant size header, similarly to the log file.
 The rest of the file is a hash table, represented as capacity * slotsize bytes.
 The capacity is simply an upper bound of the number of live entries multiplied by a hash density factor > 1.0.
