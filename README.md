@@ -16,7 +16,6 @@ Optional
 
 Building
 --------
-
     autoreconf --install
     ./configure
     make
@@ -26,8 +25,7 @@ API documentation can be generated with `doxygen`.
 
 Installing
 ----------
-
-    make install
+    sudo make install && sudo ldconfig
 
 Description
 ------------
