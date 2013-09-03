@@ -176,7 +176,7 @@
  * \endcode
  * \code
  * sparkey_logiter *myiter;
- * sparkey_returncode returncode = sparkey_logiter_init(&myiter, sparkey_hash_getreader(myreader));
+ * sparkey_returncode returncode = sparkey_logiter_create(&myiter, sparkey_hash_getreader(myreader));
  * // TODO: check the returncode
  * \endcode
  * - Iteration is exactly as described previously, but uses \ref sparkey_logiter_hashnext instead of
