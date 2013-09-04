@@ -370,6 +370,7 @@ sparkey_returncode sparkey_hash_write(const char *hash_filename, const char *log
   uint64_t start;
   uint32_t hash_seed;
   int copy_old;
+  uint32_t old_hash_size = 0;
   returncode = sparkey_load_hashheader(&old_header, hash_filename);
   if (returncode == SPARKEY_SUCCESS &&
       old_header.file_identifier == log_header.file_identifier &&
@@ -386,6 +387,7 @@ sparkey_returncode sparkey_hash_write(const char *hash_filename, const char *log
       // Nothing needs to be done - just exit
       goto close_iter;
     }
+    old_hash_size = old_header.hash_size;
   } else {
     cap = log_header.num_puts * 1.3;
     start = log_header.header_size;
@@ -411,7 +413,7 @@ sparkey_returncode sparkey_hash_write(const char *hash_filename, const char *log
   } else {
     hash_header.address_size = 8;
   }
-  if (old_header.hash_size == 8 || hash_header.hash_capacity >= (1 << 23)) {
+  if (old_hash_size == 8 || hash_header.hash_capacity >= (1 << 23)) {
     hash_header.hash_size = 8;
   } else {
     hash_header.hash_size = 4;
@@ -424,7 +426,7 @@ sparkey_returncode sparkey_hash_write(const char *hash_filename, const char *log
       goto close_iter;
     }
   }
-  if (hash_header.hash_size != old_header.hash_size) {
+  if (hash_header.hash_size != old_hash_size) {
     copy_old = 0;
   }
   hash_header.hash_algorithm = sparkey_get_hash_algorithm(hash_header.hash_size);
