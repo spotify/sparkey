@@ -230,6 +230,122 @@ If we consider the average displacement, we can't really do better than that. We
 
 It's very easy to set up the hash table like this, we just need to do insertions into slots instead of appends. As soon as we reach a slot with a smaller displacement than our own, we shift the following slots up until the first empty slot one step and insert our own element.
 
+Let's illustrate it with an example - let's start off with an empty hash table with a capacity of 7:
+
+             hash value   log offset    optimal slot    displacement
+           +------------+------------+
+    slot 0 |            |            |
+           +------------+------------+
+    slot 1 |            |            |
+           +------------+------------+
+    slot 2 |            |            |
+           +------------+------------+
+    slot 3 |            |            |
+           +------------+------------+
+    slot 4 |            |            |
+           +------------+------------+
+    slot 5 |            |            |
+           +------------+------------+
+    slot 6 |            |            |
+           +------------+------------+
+
+We add the key "key0" which happens to end up in slot 3, h("key0") % 7 == 3. The slot is empty, so this is trivial:
+
+             hash value   log offset    optimal slot    displacement
+           +------------+------------+
+    slot 0 |            |            |
+           +------------+------------+
+    slot 1 |            |            |
+           +------------+------------+
+    slot 2 |            |            |
+           +------------+------------+
+    slot 3 | h(key0)    | 1          |  3               0
+           +------------+------------+
+    slot 4 |            |            |
+           +------------+------------+
+    slot 5 |            |            |
+           +------------+------------+
+    slot 6 |            |            |
+           +------------+------------+
+
+Now we add "key1" which happens to end up in slot 4:
+
+             hash value   log offset    optimal slot    displacement
+           +------------+------------+
+    slot 0 |            |            |
+           +------------+------------+
+    slot 1 |            |            |
+           +------------+------------+
+    slot 2 |            |            |
+           +------------+------------+
+    slot 3 | h(key0)    | 1          |  3               0
+           +------------+------------+
+    slot 4 | h(key1)    | 11         |  4               0
+           +------------+------------+
+    slot 5 |            |            |
+           +------------+------------+
+    slot 6 |            |            |
+           +------------+------------+
+
+Now we add "key2" which also wants to be in slot 3. This is a conflict, so we skip forward until we found a slot which has a lower displacement than our current displacement.
+When we find that slot, all following entries until the next empty slot move down one step:
+
+             hash value   log offset    optimal slot    displacement
+           +------------+------------+
+    slot 0 |            |            |
+           +------------+------------+
+    slot 1 |            |            |
+           +------------+------------+
+    slot 2 |            |            |
+           +------------+------------+
+    slot 3 | h(key0)    | 1          |  3               0
+           +------------+------------+
+    slot 4 | h(key2)    | 21         |  3               1
+           +------------+------------+
+    slot 5 | h(key1)    | 11         |  4               1
+           +------------+------------+
+    slot 6 |            |            |
+           +------------+------------+
+
+Let's add "key3" which maps to slot 5. We can't push down key1, because it already has displacement 1 and our current displacement for key3 is 0, so we have to move forward:
+
+             hash value   log offset    optimal slot    displacement
+           +------------+------------+
+    slot 0 |            |            |
+           +------------+------------+
+    slot 1 |            |            |
+           +------------+------------+
+    slot 2 |            |            |
+           +------------+------------+
+    slot 3 | h(key0)    | 1          |  3               0
+           +------------+------------+
+    slot 4 | h(key2)    | 21         |  3               1
+           +------------+------------+
+    slot 5 | h(key1)    | 11         |  4               1
+           +------------+------------+
+    slot 6 | h(key3)    | 31         |  5               1
+           +------------+------------+
+Adding "key4" for slot 3. It ends up in slot 5 with displacement 2 and key3 loops around to slot 0:
+
+             hash value   log offset    optimal slot    displacement
+           +------------+------------+
+    slot 0 | key(key3)  | 31         |  5               2
+           +------------+------------+
+    slot 1 |            |            |
+           +------------+------------+
+    slot 2 |            |            |
+           +------------+------------+
+    slot 3 | h(key0)    | 1          |  3               0
+           +------------+------------+
+    slot 4 | h(key2)    | 21         |  3               1
+           +------------+------------+
+    slot 5 | h(key4)    | 41         |  3               2
+           +------------+------------+
+    slot 6 | h(key1)    | 11         |  4               2
+           +------------+------------+
+
+Now, if we search for key123 which maps to slot 3 (but doesn't exist!), we can stop scanning as soon as we reach slot 6, because then the current displacement (3) is higher than the displacement of the entry at the current slot (2).
+
 Compression
 -----------
 Sparkey also supports block level compression using google snappy. You select a block size which is then used to split the contents of the log into blocks. Each block is compressed independently with snappy. This can be useful if your bottleneck is file size and there is a lot of redundant data across adjacent entries. The downside of using this is that during lookups, at least one block needs to be decompressed. The larger blocks you choose, the better compression you may get, but you will also have higher lookup cost. This is a tradeoff that needs to be empirically evaluated for each use case.
