@@ -249,7 +249,7 @@ void test(candidate *c, int n, int lookups) {
   printf("    creation time (wall):     %2.2f\n", t2_wall - t1_wall);
   printf("    creation time (cpu):      %2.2f\n", t2_cpu - t1_cpu);
   printf("    throughput (puts/cpusec): %2.2f\n", (float) n / (t2_cpu - t1_cpu));
-  printf("    file size:                %ld\n", total_file_size(c->files()));
+  printf("    file size:                %zu\n", total_file_size(c->files()));
 
   c->randomaccess(n, lookups);
 
