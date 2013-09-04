@@ -249,3 +249,7 @@ uint64_t sparkey_hash_numentries(sparkey_hashreader *reader) {
   return reader->header.num_entries;
 }
 
+uint64_t sparkey_hash_numcollisions(sparkey_hashreader *reader) {
+  return reader->header.hash_collisions;
+}
+

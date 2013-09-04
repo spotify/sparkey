@@ -627,6 +627,8 @@ sparkey_returncode sparkey_logiter_hashnext(sparkey_logiter *iter, sparkey_hashr
 
 uint64_t sparkey_hash_numentries(sparkey_hashreader *reader);
 
+uint64_t sparkey_hash_numcollisions(sparkey_hashreader *reader);
+
 /* util */
 
 /**

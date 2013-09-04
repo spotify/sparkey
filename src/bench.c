@@ -18,6 +18,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
+#include <inttypes.h>
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <dirent.h>
@@ -180,6 +181,9 @@ static void sparkey_randomaccess(int n, int lookups) {
   sparkey_hashreader *myreader;
   sparkey_logiter *myiter;
   sparkey_assert(sparkey_hash_open(&myreader, "test.spi", "test.spl"));
+
+  printf("    Number of hash collisions: %"PRIu64"\n", sparkey_hash_numcollisions(myreader));
+
   sparkey_logreader *logreader = sparkey_hash_getreader(myreader);
   sparkey_assert(sparkey_logiter_create(&myiter, logreader));
 
