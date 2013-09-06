@@ -51,12 +51,13 @@ static sparkey_returncode assert_writer_open(sparkey_logwriter *log) {
   return SPARKEY_SUCCESS;
 }
 
-sparkey_returncode sparkey_logwriter_create(sparkey_logwriter **log, const char *filename, sparkey_compression_type compression_type, int compression_block_size) {
-  *log = malloc(sizeof(sparkey_logwriter));
-  if (*log == NULL) {
-    return SPARKEY_INTERNAL_ERROR;
+sparkey_returncode sparkey_logwriter_create(sparkey_logwriter **log_ref, const char *filename, sparkey_compression_type compression_type, int compression_block_size) {
+  sparkey_returncode returncode;
+  int fd = 0;
+  sparkey_logwriter *l = malloc(sizeof(sparkey_logwriter));
+  if (l == NULL) {
+    TRY(SPARKEY_INTERNAL_ERROR, error);
   }
-  sparkey_logwriter *l = *log;
   switch (compression_type) {
   case SPARKEY_COMPRESSION_NONE:
     compression_block_size = 0;
@@ -64,36 +65,36 @@ sparkey_returncode sparkey_logwriter_create(sparkey_logwriter **log, const char 
     break;
   case SPARKEY_COMPRESSION_SNAPPY:
     if (compression_block_size < 10) {
-      return SPARKEY_INVALID_COMPRESSION_BLOCK_SIZE;
+      TRY(SPARKEY_INVALID_COMPRESSION_BLOCK_SIZE, error);
     }
     l->max_compressed_size = snappy_max_compressed_length(compression_block_size);
     l->compressed = malloc(l->max_compressed_size);
     if (l->compressed == NULL) {
-      return SPARKEY_INTERNAL_ERROR;
+      TRY(SPARKEY_INTERNAL_ERROR, error);
     }
     break;
   default:
-    return SPARKEY_INVALID_COMPRESSION_TYPE;
+    TRY(SPARKEY_INVALID_COMPRESSION_TYPE, error);
   }
 
   // Try removing it first, to avoid overwriting existing files that readers may be using.
   if (remove(filename) < 0) {
     int e = errno;
     if (e != ENOENT) {
-      return sparkey_remove_returncode(e);
+      TRY(sparkey_remove_returncode(e), error);
     }
   }
 
-  int fd = open(filename, O_WRONLY | O_TRUNC | O_CREAT, 00644);
+  fd = open(filename, O_WRONLY | O_TRUNC | O_CREAT, 00644);
   if (fd == -1) {
-    return sparkey_create_returncode(errno);
+    TRY(sparkey_create_returncode(errno), error);
   }
   l->fd = fd;
 
   l->header.compression_block_size = compression_block_size;
   l->header.compression_type = compression_type;
 
-  RETHROW(rand32(&(l->header.file_identifier)));
+  TRY(rand32(&(l->header.file_identifier)), error);
   l->header.data_end = LOG_HEADER_SIZE;
   l->header.major_version = LOG_MAJOR_VERSION;
   l->header.minor_version = LOG_MINOR_VERSION;
@@ -105,32 +106,40 @@ sparkey_returncode sparkey_logwriter_create(sparkey_logwriter **log, const char 
   l->header.max_key_len = 0;
   l->header.max_value_len = 0;
 
-  RETHROW(write_logheader(fd, &l->header));
+  TRY(write_logheader(fd, &l->header), error);
   off_t pos = lseek(fd, 0, SEEK_CUR);
   if (pos != LOG_HEADER_SIZE) {
-    return SPARKEY_INTERNAL_ERROR;
+    TRY(SPARKEY_INTERNAL_ERROR, error);
   }
 
-  RETHROW(buf_init(&l->file_buf, 1024*1024));
-  RETHROW(buf_init(&l->block_buf, compression_block_size));
+  TRY(buf_init(&l->file_buf, 1024*1024), error);
+  TRY(buf_init(&l->block_buf, compression_block_size), error);
 
   l->entry_count = 0;
 
   l->open_status = MAGIC_VALUE_LOGWRITER;
+  *log_ref = l;
   return SPARKEY_SUCCESS;
+error:
+  free(l);
+  if (fd > 0) close(fd);
+  return returncode;
 }
 
-sparkey_returncode sparkey_logwriter_append(sparkey_logwriter *log, const char *filename) {
-  if (log->open_status == MAGIC_VALUE_LOGWRITER) {
-    RETHROW(sparkey_logwriter_close(&log));
+sparkey_returncode sparkey_logwriter_append(sparkey_logwriter **log_ref, const char *filename) {
+  sparkey_returncode returncode;
+  int fd = 0;
+  sparkey_logwriter *log = malloc(sizeof(sparkey_logwriter));
+  if (log == NULL) {
+    TRY(SPARKEY_INTERNAL_ERROR, error);
   }
-  RETHROW(sparkey_load_logheader(&log->header, filename));
+  TRY(sparkey_load_logheader(&log->header, filename), error);
 
   if (log->header.major_version != LOG_MAJOR_VERSION) {
-    return SPARKEY_WRONG_LOG_MAJOR_VERSION;
+    TRY(SPARKEY_WRONG_LOG_MAJOR_VERSION, error);
   }
   if (log->header.minor_version != LOG_MINOR_VERSION) {
-    return SPARKEY_UNSUPPORTED_LOG_MINOR_VERSION;
+    TRY(SPARKEY_UNSUPPORTED_LOG_MINOR_VERSION, error);
   }
 
   switch (log->header.compression_type) {
@@ -140,31 +149,36 @@ sparkey_returncode sparkey_logwriter_append(sparkey_logwriter *log, const char *
     break;
   case SPARKEY_COMPRESSION_SNAPPY:
     if (log->header.compression_block_size < 10) {
-      return SPARKEY_INVALID_COMPRESSION_BLOCK_SIZE;
+      TRY(SPARKEY_INVALID_COMPRESSION_BLOCK_SIZE, error);
     }
     log->max_compressed_size = snappy_max_compressed_length(log->header.compression_block_size);
     log->compressed = malloc(log->max_compressed_size);
     break;
   default:
-    return SPARKEY_INVALID_COMPRESSION_TYPE;
+    TRY(SPARKEY_INVALID_COMPRESSION_TYPE, error);
   }
 
-  int fd = open(filename, O_WRONLY, 00644);
+  fd = open(filename, O_WRONLY, 00644);
   if (fd == -1) {
     int e = errno;
-    return sparkey_create_returncode(e);
+    TRY(sparkey_create_returncode(e), error);
   }
   log->fd = fd;
 
   lseek(fd, log->header.data_end, SEEK_SET);
 
-  RETHROW(buf_init(&log->file_buf, 1024*1024));
-  RETHROW(buf_init(&log->block_buf, log->header.compression_block_size));
+  TRY(buf_init(&log->file_buf, 1024*1024), error);
+  TRY(buf_init(&log->block_buf, log->header.compression_block_size), error);
 
   log->entry_count = 0;
 
   log->open_status = MAGIC_VALUE_LOGWRITER;
+  *log_ref = log;
   return SPARKEY_SUCCESS;
+error:
+  free(log);
+  if (fd > 0) close(fd);
+  return returncode;
 }
 
 static sparkey_returncode flush_snappy(sparkey_logwriter *log) {

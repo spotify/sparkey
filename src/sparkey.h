@@ -289,7 +289,7 @@ typedef struct sparkey_hashreader sparkey_hashreader;
 
 /**
  * Creates a new Sparkey log file, possibly overwriting an already existing.
- * @param log a reference to a reference to a sparkey_logwriter structure that gets allocated and initialized by this call.
+ * @param log a double reference to a sparkey_logwriter structure that gets allocated and initialized by this call.
  * @param filename the file to create.
  * @param compression_type NONE or SNAPPY, specifies if block compression should be used or not.
  * @param compression_block_size is only relevant if compression type is not NONE.
@@ -300,12 +300,12 @@ sparkey_returncode sparkey_logwriter_create(sparkey_logwriter **log, const char 
 
 /**
  * Append to an existing Sparkey log file.
- * @param log a reference to an allocated but not initialized sparkey_logwriter struct.
+ * @param log a double reference to a sparkey_logwriter structure that gets allocated and initialized by this call.
  * @param filename the file to open for appending.
  * It represents the maximum number of bytes of an uncompressed block.
  * @return SPARKEY_SUCCESS if all goes well.
  */
-sparkey_returncode sparkey_logwriter_append(sparkey_logwriter *log, const char *filename);
+sparkey_returncode sparkey_logwriter_append(sparkey_logwriter **log, const char *filename);
 
 /**
  * Append a key/value pair to the log file
