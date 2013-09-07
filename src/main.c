@@ -20,12 +20,21 @@
 
 #include "logheader.h"
 #include "hashheader.h"
+#include "endiantools.h"
 #include "sparkey.h"
 
 void usage() {
 	printf("Usage: sparkey <command> <options>\n");
 	printf("Commands: info [file...]\n");
 	printf("Commands: get <index file> <key>\n");
+}
+
+static void assert(sparkey_returncode rc) {
+  if (rc != SPARKEY_SUCCESS) {
+    fprintf(stderr, "%s\n", sparkey_errstring(rc));
+    // skip cleanup - program exit will clean up implicitly.
+    exit(1);
+  }
 }
 
 int info(int argv, const char **args) {
@@ -56,30 +65,12 @@ int get(const char *hashfile, const char *logfile, const char *key) {
   sparkey_hashreader *reader;
   sparkey_logreader *logreader;
   sparkey_logiter *iter;
-  sparkey_returncode errcode = sparkey_hash_open(&reader, hashfile, logfile);
-  if (errcode != SPARKEY_SUCCESS) {
-    puts(sparkey_errstring(errcode));
-    puts("\n");
-    return 1;
-  }
+  assert(sparkey_hash_open(&reader, hashfile, logfile));
   logreader = sparkey_hash_getreader(reader);
-  errcode = sparkey_logiter_create(&iter, logreader);
-  if (errcode != SPARKEY_SUCCESS) {
-    sparkey_hash_close(&reader);
-    puts(sparkey_errstring(errcode));
-    puts("\n");
-    return 1;
-  }
+  assert(sparkey_logiter_create(&iter, logreader));
 
   uint64_t keylen = strlen(key);
-  errcode = sparkey_hash_get(reader, (uint8_t*) key, keylen, iter);
-  if (errcode != SPARKEY_SUCCESS) {
-    sparkey_logiter_close(&iter);
-    sparkey_hash_close(&reader);
-    puts(sparkey_errstring(errcode));
-    puts("\n");
-    return 1;
-  }
+  assert(sparkey_hash_get(reader, (uint8_t*) key, keylen, iter));
 
   int exitcode = 2;
   if (sparkey_logiter_state(iter) == SPARKEY_ITER_ACTIVE) {
@@ -87,15 +78,8 @@ int get(const char *hashfile, const char *logfile, const char *key) {
     uint8_t * res;
     uint64_t len;
     do {
-      errcode = sparkey_logiter_valuechunk(iter, logreader, 1 << 31, &res, &len);
-      if (errcode != SPARKEY_SUCCESS) {
-        sparkey_logiter_close(&iter);
-        sparkey_hash_close(&reader);
-        puts(sparkey_errstring(errcode));
-        puts("\n");
-        return 1;
-      }
-      fwrite(res, 1, len, stdout);
+      assert(sparkey_logiter_valuechunk(iter, logreader, 1 << 31, &res, &len));
+      assert(write_full(STDOUT_FILENO, res, len));
     } while (len > 0);
   }
   sparkey_logiter_close(&iter);
