@@ -39,8 +39,8 @@
  * \endcode
  * - Write to the log:
  * \code
- * const char *key = "mykey";
- * const char *value = "this is my value";
+ * const char *mykey = "mykey";
+ * const char *myvalue = "this is my value";
  * sparkey_returncode returncode = sparkey_logwriter_put(mywriter, strlen(mykey), (uint8_t*)mykey, strlen(myvalue), (uint8_t*)myvalue);
  * // TODO: check the returncode
  * \endcode
