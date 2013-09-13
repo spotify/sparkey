@@ -27,6 +27,12 @@ Installing
 ----------
     sudo make install && sudo ldconfig
 
+Related projects
+----------------
+
+* [sparkey-python: Official python bindings](https://github.com/spotify/sparkey-python)
+* [gnista: Unofficial ruby bindings](https://github.com/emnl/gnista)
+
 Description
 ------------
 Sparkey is an extremely simple persistent key-value store.
