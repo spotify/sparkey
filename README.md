@@ -31,6 +31,7 @@ Related projects
 ----------------
 
 * [sparkey-python: Official python bindings](https://github.com/spotify/sparkey-python)
+* [sparkey-java: Official java implementation](https://github.com/spotify/sparkey-java)
 * [gnista: Unofficial ruby bindings](https://github.com/emnl/gnista)
 
 Description
