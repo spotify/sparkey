@@ -27,6 +27,7 @@ void usage() {
 	printf("Usage: sparkey <command> <options>\n");
 	printf("Commands: info [file...]\n");
 	printf("Commands: get <index file> <key>\n");
+	printf("Commands: writehash <log file>\n");
 }
 
 static void assert(sparkey_returncode rc) {
@@ -87,18 +88,24 @@ int get(const char *hashfile, const char *logfile, const char *key) {
   return exitcode;
 }
 
+int writehash(const char *indexfile, const char *logfile) {
+  assert(sparkey_hash_write(indexfile, logfile, 0));
+  return 0;
+}
+
 int main(int argv, const char **args) {
   if (argv < 2) {
     usage();
     return 1;
   }
-  if (strcmp(args[1], "info") == 0) {
+  const char *command = args[1];
+  if (strcmp(command, "info") == 0) {
     if (argv < 3) {
       usage();
       return 1;
     }
     return info(argv - 2, args + 2);
-  } else if (strcmp(args[1], "get") == 0) {
+  } else if (strcmp(command, "get") == 0) {
     if (argv < 4) {
       usage();
       return 1;
@@ -112,8 +119,22 @@ int main(int argv, const char **args) {
     int retval = get(args[2], log_filename, args[3]);
     free(log_filename);
     return retval;
+  } else if (strcmp(command, "writehash") == 0) {
+    if (argv < 3) {
+      usage();
+      return 1;
+    }
+    const char *log_filename = args[2];
+    char *index_filename = sparkey_create_index_filename(log_filename);
+    if (index_filename == NULL) {
+      printf("log filename must end with .spl\n");
+      return 1;
+    }
+    int retval = writehash(index_filename, log_filename);
+    free(index_filename);
+    return retval;
   } else {
-    printf("Unknown command: %s\n", args[1]);
+    printf("Unknown command: %s\n", command);
     usage();
     return 1;
   }

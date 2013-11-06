@@ -64,22 +64,29 @@ sparkey_returncode sparkey_remove_returncode(int e) {
   }
 }
 
-char * sparkey_create_log_filename(const char *index_filename) {
-  if (index_filename == NULL) return NULL;
-  size_t l = strlen(index_filename);
+static inline char * _create_filename(const char *input, const char *from, char to) {
+  if (input == NULL) return NULL;
+  size_t l = strlen(input);
 
   // Paranoia - avoid ridiculously long filenames.
   if (l > 10000) return NULL;
 
-  // Too short to contain .spi
-  if (l < 4) return NULL;
+  // Too short to contain from
+  if (l < strlen(from)) return NULL;
 
-  if (memcmp(&index_filename[l - 4], ".spi", 4)) return NULL;
+  if (memcmp(&input[l - strlen(from)], from, strlen(from))) return NULL;
 
-  char *log_filename = strdup(index_filename);
-  if (log_filename == NULL) return NULL;
+  char *output = strdup(input);
+  if (output == NULL) return NULL;
 
-  log_filename[l - 1] = 'l';
-  return log_filename;
+  output[l - 1] = to;
+  return output;
 }
 
+char * sparkey_create_log_filename(const char *index_filename) {
+  return _create_filename(index_filename, ".spi", 'l');
+}
+
+char * sparkey_create_index_filename(const char *log_filename) {
+  return _create_filename(log_filename, ".spl", 'i');
+}
