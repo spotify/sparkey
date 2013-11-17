@@ -30,9 +30,10 @@ Installing
 Related projects
 ----------------
 
-* [sparkey-python: Official python bindings](https://github.com/spotify/sparkey-python)
-* [sparkey-java: Official java implementation](https://github.com/spotify/sparkey-java)
-* [gnista: Unofficial ruby bindings](https://github.com/emnl/gnista)
+* [spotify/sparkey-python: Official python bindings](https://github.com/spotify/sparkey-python)
+* [spotify/sparkey-java: Official java implementation](https://github.com/spotify/sparkey-java)
+* [emnl/gnista: Unofficial ruby bindings](https://github.com/emnl/gnista)
+* [adamtanner/sparkey: Unofficial ruby bindings](https://github.com/adamtanner/sparkey)
 
 Description
 ------------
