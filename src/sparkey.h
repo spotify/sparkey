@@ -205,6 +205,10 @@
 
 #include <stdint.h>
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 typedef enum {
   SPARKEY_SUCCESS = 0,
   SPARKEY_INTERNAL_ERROR = -1,
@@ -638,6 +642,10 @@ uint64_t sparkey_hash_numcollisions(sparkey_hashreader *reader);
  * @returns NULL if the index_filename does not end with ".spi"
  */
 char * sparkey_create_log_filename(const char *index_filename);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif
 
