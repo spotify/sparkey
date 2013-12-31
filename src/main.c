@@ -17,17 +17,43 @@
 #include <stdlib.h>
 #include <string.h>
 #include <time.h>
+#include <unistd.h>
+#include <ctype.h>
 
 #include "logheader.h"
 #include "hashheader.h"
 #include "endiantools.h"
+#include "util.h"
 #include "sparkey.h"
 
+#define MINIMUM_CAPACITY (1<<8)
+#define MAXIMUM_CAPACITY (1<<28)
+#define SNAPPY_DEFAULT_BLOCKSIZE (1<<12)
+#define SNAPPY_MAX_BLOCKSIZE (1<<30)
+#define SNAPPY_MIN_BLOCKSIZE (1<<4)
+
 void usage() {
-	printf("Usage: sparkey <command> <options>\n");
-	printf("Commands: info [file...]\n");
-	printf("Commands: get <index file> <key>\n");
-	printf("Commands: writehash <log file>\n");
+  printf("Usage: sparkey <command> <options>\n");
+  printf("  sparkey info [file...]\n");
+  printf("      Show information about files. Files can be either index or log files.\n");
+  printf("  sparkey get <index file> <key>\n");
+  printf("      Get the value for a specific key.\n");
+  printf("      Returns 0 on found, 1 on error and 2 on not-found.\n");
+  printf("  sparkey writehash <log file>\n");
+  printf("      Write a new index file for a log file\n");
+  printf("  sparkey createlog [-c <none|snappy> | -b <n>] <log file>\n");
+  printf("      Create a new empty log file with specified settings:\n");
+  printf("        -c <none|snappy>  Compression algorithm [default: none]\n");
+  printf("        -b <n>            Compression blocksize [default: %d]\n",
+    SNAPPY_DEFAULT_BLOCKSIZE);
+  printf("                          [min: %d, max: %d]\n",
+    SNAPPY_MIN_BLOCKSIZE, SNAPPY_MAX_BLOCKSIZE);
+  printf("  sparkey appendlog <log file>\n");
+  printf("      Append data from STDIN to a log file with settings.\n");
+  printf("      data must be formatted as a sequence of\n");
+  printf("        <key> <delimiter> <value> <newline>\n");
+  printf("      Options:\n");
+  printf("        -d <char>  Delimiter char to split input records on [default: TAB]\n");
 }
 
 static void assert(sparkey_returncode rc) {
@@ -38,7 +64,7 @@ static void assert(sparkey_returncode rc) {
   }
 }
 
-int info(int argv, const char **args) {
+int info(int argv, char * const *args) {
   int retval = 0;
   sparkey_logheader logheader;
   sparkey_hashheader hashheader;
@@ -93,7 +119,7 @@ int writehash(const char *indexfile, const char *logfile) {
   return 0;
 }
 
-int main(int argv, const char **args) {
+int main(int argv, char * const *args) {
   if (argv < 2) {
     usage();
     return 1;
@@ -133,9 +159,63 @@ int main(int argv, const char **args) {
     int retval = writehash(index_filename, log_filename);
     free(index_filename);
     return retval;
+  } else if (strcmp(args[1], "createlog") == 0) {
+    opterr = 0;
+    optind = 2;
+    int opt_char;
+    int block_size = SNAPPY_DEFAULT_BLOCKSIZE;
+    sparkey_compression_type compression_type = SPARKEY_COMPRESSION_NONE;
+    while ((opt_char = getopt (argv, args, "b:c:")) != -1) {
+      switch (opt_char) {
+      case 'b':
+        if (sscanf(optarg, "%d", &block_size) != 1) {
+          fprintf(stderr, "Block size must be an integer, but was '%s'\n", optarg);
+          return 1;          
+        }
+        if (block_size > SNAPPY_MAX_BLOCKSIZE || block_size < SNAPPY_MIN_BLOCKSIZE) {
+          fprintf(stderr, "Block size %d, not in range. Max is %d, min is %d\n",
+          block_size, SNAPPY_MAX_BLOCKSIZE, SNAPPY_MIN_BLOCKSIZE);
+          return 1;
+        }
+        break;
+      case 'c':
+        if (strcmp(optarg, "none") == 0) {
+          compression_type = SPARKEY_COMPRESSION_NONE;
+        } else if (strcmp(optarg, "snappy") == 0) {
+          compression_type = SPARKEY_COMPRESSION_SNAPPY;
+        } else {
+          fprintf(stderr, "Invalid compression type: '%s'\n", optarg);
+          return 1;          
+        }
+        break;
+      case '?':
+        if (optopt == 'b' || optopt == 'c') {
+          fprintf(stderr, "Option -%c requires an argument.\n", optopt);
+        } else if (isprint(optopt)) {
+          fprintf(stderr, "Unknown option '-%c'.\n", optopt);
+        } else {
+          fprintf(stderr, "Unknown option character '\\x%x'.\n", optopt);
+        }
+        return 1;
+      default:
+        fprintf(stderr, "Unknown option parsing failure\n");
+        return 1;
+      }
+    }        
+        
+    if (optind >= argv) {
+      fprintf(stderr, "Expected <logfile> after options\n");
+      return 1;
+    }
+
+    const char *log_filename = args[optind];
+    sparkey_logwriter *writer;
+	assert(sparkey_logwriter_create(&writer, log_filename,
+      compression_type, block_size));
+    assert(sparkey_logwriter_close(&writer));
+    return 0;
   } else {
     printf("Unknown command: %s\n", command);
-    usage();
     return 1;
   }
 }
