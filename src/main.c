@@ -48,7 +48,7 @@ void usage() {
     SNAPPY_DEFAULT_BLOCKSIZE);
   fprintf(stderr, "                          [min: %d, max: %d]\n",
     SNAPPY_MIN_BLOCKSIZE, SNAPPY_MAX_BLOCKSIZE);
-  fprintf(stderr, "  sparkey appendlog <log file>\n");
+  fprintf(stderr, "  sparkey appendlog [-d <char>] <log file>\n");
   fprintf(stderr, "      Append data from STDIN to a log file with settings.\n");
   fprintf(stderr, "      data must be formatted as a sequence of\n");
   fprintf(stderr, "        <key> <delimiter> <value> <newline>\n");
@@ -119,6 +119,75 @@ int writehash(const char *indexfile, const char *logfile) {
   return 0;
 }
 
+static size_t read_line(char **buffer, size_t *capacity, FILE *input) {
+  char *buf = *buffer;
+  size_t cap = *capacity, pos = 0;
+
+  if (cap < MINIMUM_CAPACITY) {
+    cap = MINIMUM_CAPACITY;
+  } else if (cap > MAXIMUM_CAPACITY) {
+    return pos;
+  }
+
+  while (1) {
+    buf = realloc(buf, cap);
+    if (buf == NULL) {
+      return pos;
+    }
+    *buffer = buf;
+    *capacity = cap;
+
+    if (fgets(buf + pos, cap - pos, input) == NULL) {
+      break;
+    }
+
+    pos += strcspn(buf + pos, "\n");
+    if (buf[pos] == '\n') {
+      break;
+    }
+
+    cap *= 2;
+  }
+
+  return pos;
+}
+
+static int append(sparkey_logwriter *writer, char delimiter, FILE *input) {
+  char *line = NULL;
+  char *key = NULL;
+  char *value = NULL;
+  size_t size = 0;
+  sparkey_returncode returncode;
+  char delim[2];
+  delim[0] = delimiter;
+  delim[1] = '\0';
+
+  for (size_t end = read_line(&line, &size, input); line[end] == '\n'; end = read_line(&line, &size, input)) {
+    line[end] = '\0'; // trim '\n' off the end
+    // Split on the first delimiter
+    key = strtok(line, delim);
+    value = strtok(NULL, delim);
+    if (value != NULL) {
+      // Write to log
+      TRY(sparkey_logwriter_put(writer, strlen(key), (uint8_t*)key, strlen(value), (uint8_t*)value), put_fail);
+    } else {
+      goto split_fail;
+    }
+  }
+
+  free(line);
+  return 0;
+
+split_fail:
+  free(line);
+  fprintf(stderr, "Cannot split input line, exiting with status %d\n", 1);
+  return 1;
+put_fail:
+  free(line);
+  fprintf(stderr, "Cannot put line to log file, exiting with status %d\n", returncode);
+  return returncode;
+}
+
 int main(int argv, char * const *args) {
   if (argv < 2) {
     usage();
@@ -170,7 +239,7 @@ int main(int argv, char * const *args) {
       case 'b':
         if (sscanf(optarg, "%d", &block_size) != 1) {
           fprintf(stderr, "Block size must be an integer, but was '%s'\n", optarg);
-          return 1;          
+          return 1;
         }
         if (block_size > SNAPPY_MAX_BLOCKSIZE || block_size < SNAPPY_MIN_BLOCKSIZE) {
           fprintf(stderr, "Block size %d, not in range. Max is %d, min is %d\n",
@@ -185,7 +254,7 @@ int main(int argv, char * const *args) {
           compression_type = SPARKEY_COMPRESSION_SNAPPY;
         } else {
           fprintf(stderr, "Invalid compression type: '%s'\n", optarg);
-          return 1;          
+          return 1;
         }
         break;
       case '?':
@@ -210,8 +279,48 @@ int main(int argv, char * const *args) {
 
     const char *log_filename = args[optind];
     sparkey_logwriter *writer;
-	assert(sparkey_logwriter_create(&writer, log_filename,
+  assert(sparkey_logwriter_create(&writer, log_filename,
       compression_type, block_size));
+    assert(sparkey_logwriter_close(&writer));
+    return 0;
+  } else if (strcmp(args[1], "appendlog") == 0) {
+    opterr = 0;
+    optind = 2;
+    int opt_char;
+    char delimiter = '\t';
+    while ((opt_char = getopt (argv, args, "d:")) != -1) {
+      switch (opt_char) {
+      case 'd':
+        if (strlen(optarg) != 1) {
+          fprintf(stderr, "delimiter must be one character, but was '%s'\n", optarg);
+          return 1;
+        }
+        delimiter = optarg[0];
+        break;
+      case '?':
+        if (optopt == 'd') {
+          fprintf(stderr, "Option -%c requires an argument.\n", optopt);
+        } else if (isprint(optopt)) {
+          fprintf(stderr, "Unknown option '-%c'.\n", optopt);
+        } else {
+          fprintf(stderr, "Unknown option character '\\x%x'.\n", optopt);
+        }
+        return 1;
+      default:
+        fprintf(stderr, "Unknown option parsing failure\n");
+        return 1;
+      }
+    }        
+        
+    if (optind >= argv) {
+      fprintf(stderr, "Expected <logfile> after options\n");
+      return 1;
+    }
+
+    const char *log_filename = args[optind];
+    sparkey_logwriter *writer;
+    assert(sparkey_logwriter_append(&writer, log_filename));
+    append(writer, delimiter, stdin);
     assert(sparkey_logwriter_close(&writer));
     return 0;
   } else {
