@@ -33,27 +33,27 @@
 #define SNAPPY_MIN_BLOCKSIZE (1<<4)
 
 void usage() {
-  printf("Usage: sparkey <command> <options>\n");
-  printf("  sparkey info [file...]\n");
-  printf("      Show information about files. Files can be either index or log files.\n");
-  printf("  sparkey get <index file> <key>\n");
-  printf("      Get the value for a specific key.\n");
-  printf("      Returns 0 on found, 1 on error and 2 on not-found.\n");
-  printf("  sparkey writehash <log file>\n");
-  printf("      Write a new index file for a log file\n");
-  printf("  sparkey createlog [-c <none|snappy> | -b <n>] <log file>\n");
-  printf("      Create a new empty log file with specified settings:\n");
-  printf("        -c <none|snappy>  Compression algorithm [default: none]\n");
-  printf("        -b <n>            Compression blocksize [default: %d]\n",
+  fprintf(stderr, "Usage: sparkey <command> <options>\n");
+  fprintf(stderr, "  sparkey info [file...]\n");
+  fprintf(stderr, "      Show information about files. Files can be either index or log files.\n");
+  fprintf(stderr, "  sparkey get <index file> <key>\n");
+  fprintf(stderr, "      Get the value for a specific key.\n");
+  fprintf(stderr, "      Returns 0 on found, 1 on error and 2 on not-found.\n");
+  fprintf(stderr, "  sparkey writehash <log file>\n");
+  fprintf(stderr, "      Write a new index file for a log file\n");
+  fprintf(stderr, "  sparkey createlog [-c <none|snappy> | -b <n>] <log file>\n");
+  fprintf(stderr, "      Create a new empty log file with specified settings:\n");
+  fprintf(stderr, "        -c <none|snappy>  Compression algorithm [default: none]\n");
+  fprintf(stderr, "        -b <n>            Compression blocksize [default: %d]\n",
     SNAPPY_DEFAULT_BLOCKSIZE);
-  printf("                          [min: %d, max: %d]\n",
+  fprintf(stderr, "                          [min: %d, max: %d]\n",
     SNAPPY_MIN_BLOCKSIZE, SNAPPY_MAX_BLOCKSIZE);
-  printf("  sparkey appendlog <log file>\n");
-  printf("      Append data from STDIN to a log file with settings.\n");
-  printf("      data must be formatted as a sequence of\n");
-  printf("        <key> <delimiter> <value> <newline>\n");
-  printf("      Options:\n");
-  printf("        -d <char>  Delimiter char to split input records on [default: TAB]\n");
+  fprintf(stderr, "  sparkey appendlog <log file>\n");
+  fprintf(stderr, "      Append data from STDIN to a log file with settings.\n");
+  fprintf(stderr, "      data must be formatted as a sequence of\n");
+  fprintf(stderr, "        <key> <delimiter> <value> <newline>\n");
+  fprintf(stderr, "      Options:\n");
+  fprintf(stderr, "        -d <char>  Delimiter char to split input records on [default: TAB]\n");
 }
 
 static void assert(sparkey_returncode rc) {
@@ -80,7 +80,7 @@ int info(int argv, char * const *args) {
         printf("%s\n", args[i]);
         print_hashheader(&hashheader);
       } else {
-        printf("%s is neither a sparkey log file (%s) nor an index file (%s)\n", filename, sparkey_errstring(res), sparkey_errstring(res2));
+        fprintf(stderr, "%s is neither a sparkey log file (%s) nor an index file (%s)\n", filename, sparkey_errstring(res), sparkey_errstring(res2));
         retval = 1;
       }
     }
@@ -139,7 +139,7 @@ int main(int argv, char * const *args) {
     const char *index_filename = args[2];
     char *log_filename = sparkey_create_log_filename(index_filename);
     if (log_filename == NULL) {
-      printf("index filename must end with .spi\n");
+      fprintf(stderr, "index filename must end with .spi\n");
       return 1;
     }
     int retval = get(args[2], log_filename, args[3]);
@@ -153,7 +153,7 @@ int main(int argv, char * const *args) {
     const char *log_filename = args[2];
     char *index_filename = sparkey_create_index_filename(log_filename);
     if (index_filename == NULL) {
-      printf("log filename must end with .spl\n");
+      fprintf(stderr, "log filename must end with .spl\n");
       return 1;
     }
     int retval = writehash(index_filename, log_filename);
@@ -215,7 +215,7 @@ int main(int argv, char * const *args) {
     assert(sparkey_logwriter_close(&writer));
     return 0;
   } else {
-    printf("Unknown command: %s\n", command);
+    fprintf(stderr, "Unknown command: %s\n", command);
     return 1;
   }
 }
