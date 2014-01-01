@@ -34,13 +34,17 @@
 
 static void usage() {
   fprintf(stderr, "Usage: sparkey <command> [<args>]\n");
-  fprintf(stderr, "Commands:\n");
+  fprintf(stderr, "Read-only commands:\n");
   fprintf(stderr, "  info      - Show information about sparkey files.\n");
   fprintf(stderr, "  get       - Get the value associated with a key.\n");
+  fprintf(stderr, "  printlog  - Print all items in a log file.\n");
+  fprintf(stderr, "  printhash - Print all live items in a log and hash file.\n");
+  fprintf(stderr, "  help      - Show this help text.\n");
+  fprintf(stderr, "\n");
+  fprintf(stderr, "Read-write commands:\n");
   fprintf(stderr, "  writehash - Generate a hash file from a log file.\n");
   fprintf(stderr, "  createlog - Create an empty log file.\n");
   fprintf(stderr, "  appendlog - Append key-value pairs to an existing log file.\n");
-  fprintf(stderr, "  help      - Show this help text.\n");
 }
 
 static void usage_info() {
@@ -54,6 +58,21 @@ static void usage_get() {
   fprintf(stderr, "  Returns 0 if found,\n");
   fprintf(stderr, "          1 on error,\n");
   fprintf(stderr, "          2 on not-found.\n");
+}
+
+static void usage_printlog() {
+  fprintf(stderr, "Usage: sparkey printlog <file.spl>\n");
+  fprintf(stderr, "  Print all entries in a log file to stdout.\n");
+  fprintf(stderr, "  Each entry is printed on the form:\n");
+  fprintf(stderr, "  PUT key=value\n");
+  fprintf(stderr, "  DELETE key\n");
+}
+
+static void usage_printhash() {
+  fprintf(stderr, "Usage: sparkey printhash <file.spi>\n");
+  fprintf(stderr, "  Print all entries in a log and hash file to stdout.\n");
+  fprintf(stderr, "  Each entry is printed on the form:\n");
+  fprintf(stderr, "  key=value\n");
 }
 
 static void usage_writehash() {
