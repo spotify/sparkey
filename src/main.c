@@ -1,5 +1,5 @@
 /*
-* Copyright (c) 2012-2013 Spotify AB
+* Copyright (c) 2012-2014 Spotify AB
 *
 * Licensed under the Apache License, Version 2.0 (the "License"); you may not
 * use this file except in compliance with the License. You may obtain a copy of
@@ -17,16 +17,88 @@
 #include <stdlib.h>
 #include <string.h>
 #include <time.h>
+#include <unistd.h>
+#include <ctype.h>
 
 #include "logheader.h"
 #include "hashheader.h"
 #include "endiantools.h"
+#include "util.h"
 #include "sparkey.h"
 
-void usage() {
-	printf("Usage: sparkey <command> <options>\n");
-	printf("Commands: info [file...]\n");
-	printf("Commands: get <index file> <key>\n");
+#define MINIMUM_CAPACITY (1<<8)
+#define MAXIMUM_CAPACITY (1<<28)
+#define SNAPPY_DEFAULT_BLOCKSIZE (1<<12)
+#define SNAPPY_MAX_BLOCKSIZE (1<<30)
+#define SNAPPY_MIN_BLOCKSIZE (1<<4)
+
+static void usage() {
+  fprintf(stderr, "Usage: sparkey <command> [<args>]\n");
+  fprintf(stderr, "Read-only commands:\n");
+  fprintf(stderr, "  info      - Show information about sparkey files.\n");
+  fprintf(stderr, "  get       - Get the value associated with a key.\n");
+  fprintf(stderr, "  printlog  - Print all items in a log file.\n");
+  fprintf(stderr, "  printhash - Print all live items in a log and hash file.\n");
+  fprintf(stderr, "  help      - Show this help text.\n");
+  fprintf(stderr, "\n");
+  fprintf(stderr, "Read-write commands:\n");
+  fprintf(stderr, "  writehash - Generate a hash file from a log file.\n");
+  fprintf(stderr, "  createlog - Create an empty log file.\n");
+  fprintf(stderr, "  appendlog - Append key-value pairs to an existing log file.\n");
+}
+
+static void usage_info() {
+  fprintf(stderr, "Usage: sparkey info file1 [file2, ...]\n");
+  fprintf(stderr, "  Show information about files. Files can be either index or log files.\n");
+}
+
+static void usage_get() {
+  fprintf(stderr, "Usage: sparkey get <index file> <key>\n");
+  fprintf(stderr, "  Get the value for a specific key.\n");
+  fprintf(stderr, "  Returns 0 if found,\n");
+  fprintf(stderr, "          1 on error,\n");
+  fprintf(stderr, "          2 on not-found.\n");
+}
+
+static void usage_printlog() {
+  fprintf(stderr, "Usage: sparkey printlog <file.spl>\n");
+  fprintf(stderr, "  Print all entries in a log file to stdout.\n");
+  fprintf(stderr, "  Each entry is printed on the form:\n");
+  fprintf(stderr, "  PUT key=value\n");
+  fprintf(stderr, "  DELETE key\n");
+}
+
+static void usage_printhash() {
+  fprintf(stderr, "Usage: sparkey printhash <file.spi>\n");
+  fprintf(stderr, "  Print all entries in a log and hash file to stdout.\n");
+  fprintf(stderr, "  Each entry is printed on the form:\n");
+  fprintf(stderr, "  key=value\n");
+}
+
+static void usage_writehash() {
+  fprintf(stderr, "Usage: sparkey writehash <file.spl>\n");
+  fprintf(stderr, "  Write a new index file for a log file.\n");
+  fprintf(stderr, "  Creates and possibly overwrites a new file with file ending .spi\n");
+}
+
+static void usage_createlog() {
+  fprintf(stderr, "Usage: sparkey createlog [-c <none|snappy> | -b <n>] <file.spl>\n");
+  fprintf(stderr, "  Create a new empty log file.\n");
+  fprintf(stderr, "Options:\n");
+  fprintf(stderr, "  -c <none|snappy>  Compression algorithm [default: none]\n");
+  fprintf(stderr, "  -b <n>            Compression blocksize [default: %d]\n",
+    SNAPPY_DEFAULT_BLOCKSIZE);
+  fprintf(stderr, "                    [min: %d, max: %d]\n",
+    SNAPPY_MIN_BLOCKSIZE, SNAPPY_MAX_BLOCKSIZE);
+}
+
+static void usage_appendlog() {
+  fprintf(stderr, "Usage: sparkey appendlog [-d <char>] <file.spl>\n");
+  fprintf(stderr, "  Append data from STDIN to a log file with settings.\n");
+  fprintf(stderr, "  data must be formatted as a sequence of\n");
+  fprintf(stderr, "  <key> <delimiter> <value> <newline>\n");
+  fprintf(stderr, "Options:\n");
+  fprintf(stderr, "  -d <char>  Delimiter char to split input records on [default: TAB]\n");
 }
 
 static void assert(sparkey_returncode rc) {
@@ -37,26 +109,43 @@ static void assert(sparkey_returncode rc) {
   }
 }
 
-int info(int argv, const char **args) {
-  int retval = 0;
+static int info_file(const char *filename) {
   sparkey_logheader logheader;
   sparkey_hashheader hashheader;
-  for (int i = 0; i < argv; i++) {
-    const char *filename = args[i];
-    sparkey_returncode res = sparkey_load_logheader(&logheader, filename);
-    if (res == SPARKEY_SUCCESS) {
-      printf("%s\n", filename);
-      print_logheader(&logheader);
-    } else {
-      sparkey_returncode res2 = sparkey_load_hashheader(&hashheader, filename);
-      if (res2 == SPARKEY_SUCCESS) {
-        printf("%s\n", args[i]);
-        print_hashheader(&hashheader);
-      } else {
-        printf("%s is neither a sparkey log file (%s) nor an index file (%s)\n", filename, sparkey_errstring(res), sparkey_errstring(res2));
-        retval = 1;
-      }
-    }
+  sparkey_returncode res = sparkey_load_logheader(&logheader, filename);
+  if (res == SPARKEY_SUCCESS) {
+    printf("Filename: %s\n", filename);
+    print_logheader(&logheader);
+    printf("\n");
+    return 0;
+  }
+
+  if (res != SPARKEY_WRONG_LOG_MAGIC_NUMBER) {
+    fprintf(stderr, "%s: %s\n", filename, sparkey_errstring(res));
+    return 1;
+  }
+
+  res = sparkey_load_hashheader(&hashheader, filename);
+  if (res == SPARKEY_SUCCESS) {
+    printf("Filename: %s\n", filename);
+    print_hashheader(&hashheader);
+    printf("\n");
+    return 0;
+  }
+
+  if (res != SPARKEY_WRONG_HASH_MAGIC_NUMBER) {
+    fprintf(stderr, "%s: %s\n", filename, sparkey_errstring(res));
+    return 1;
+  }
+
+  fprintf(stderr, "%s: Not a sparkey file.\n", filename);
+  return 1;
+}
+
+int info(int argc, char * const *argv) {
+  int retval = 0;
+  for (int i = 0; i < argc; i++) {
+    retval |= info_file(argv[i]); 
   }
   return retval;
 }
@@ -87,34 +176,220 @@ int get(const char *hashfile, const char *logfile, const char *key) {
   return exitcode;
 }
 
-int main(int argv, const char **args) {
-  if (argv < 2) {
-    usage();
-    return 1;
+int writehash(const char *indexfile, const char *logfile) {
+  assert(sparkey_hash_write(indexfile, logfile, 0));
+  return 0;
+}
+
+static size_t read_line(char **buffer, size_t *capacity, FILE *input) {
+  char *buf = *buffer;
+  size_t cap = *capacity, pos = 0;
+
+  if (cap < MINIMUM_CAPACITY) {
+    cap = MINIMUM_CAPACITY;
+  } else if (cap > MAXIMUM_CAPACITY) {
+    return pos;
   }
-  if (strcmp(args[1], "info") == 0) {
-    if (argv < 3) {
-      usage();
+
+  while (1) {
+    buf = realloc(buf, cap);
+    if (buf == NULL) {
+      return pos;
+    }
+    *buffer = buf;
+    *capacity = cap;
+
+    if (fgets(buf + pos, cap - pos, input) == NULL) {
+      break;
+    }
+
+    pos += strcspn(buf + pos, "\n");
+    if (buf[pos] == '\n') {
+      break;
+    }
+
+    cap *= 2;
+  }
+
+  return pos;
+}
+
+static int append(sparkey_logwriter *writer, char delimiter, FILE *input) {
+  char *line = NULL;
+  char *key = NULL;
+  char *value = NULL;
+  size_t size = 0;
+  sparkey_returncode returncode;
+  char delim[2];
+  delim[0] = delimiter;
+  delim[1] = '\0';
+
+  for (size_t end = read_line(&line, &size, input); line[end] == '\n'; end = read_line(&line, &size, input)) {
+    line[end] = '\0'; // trim '\n' off the end
+    // Split on the first delimiter
+    key = strtok(line, delim);
+    value = strtok(NULL, delim);
+    if (value != NULL) {
+      // Write to log
+      TRY(sparkey_logwriter_put(writer, strlen(key), (uint8_t*)key, strlen(value), (uint8_t*)value), put_fail);
+    } else {
+      goto split_fail;
+    }
+  }
+
+  free(line);
+  return 0;
+
+split_fail:
+  free(line);
+  fprintf(stderr, "Cannot split input line, aborting early.\n");
+  return 1;
+put_fail:
+  free(line);
+  fprintf(stderr, "Cannot append line to log file, aborting early: %s\n", sparkey_errstring(returncode));
+  return 1;
+}
+
+int main(int argc, char * const *argv) {
+  if (argc < 2) {
+    usage();
+    return 0;
+  }
+  const char *command = argv[1];
+  if (strcmp(command, "info") == 0) {
+    if (argc < 3) {
+      usage_info();
       return 1;
     }
-    return info(argv - 2, args + 2);
-  } else if (strcmp(args[1], "get") == 0) {
-    if (argv < 4) {
-      usage();
+    return info(argc - 2, argv + 2);
+  } else if (strcmp(command, "get") == 0) {
+    if (argc < 4) {
+      usage_get();
       return 1;
     }
-    const char *index_filename = args[2];
+    const char *index_filename = argv[2];
     char *log_filename = sparkey_create_log_filename(index_filename);
     if (log_filename == NULL) {
-      printf("index filename must end with .spi\n");
+      fprintf(stderr, "index filename must end with .spi\n");
       return 1;
     }
-    int retval = get(args[2], log_filename, args[3]);
+    int retval = get(argv[2], log_filename, argv[3]);
     free(log_filename);
     return retval;
-  } else {
-    printf("Unknown command: %s\n", args[1]);
+  } else if (strcmp(command, "writehash") == 0) {
+    if (argc < 3) {
+      usage_writehash();
+      return 1;
+    }
+    const char *log_filename = argv[2];
+    char *index_filename = sparkey_create_index_filename(log_filename);
+    if (index_filename == NULL) {
+      fprintf(stderr, "log filename must end with .spl\n");
+      return 1;
+    }
+    int retval = writehash(index_filename, log_filename);
+    free(index_filename);
+    return retval;
+  } else if (strcmp(command, "createlog") == 0) {
+    opterr = 0;
+    optind = 2;
+    int opt_char;
+    int block_size = SNAPPY_DEFAULT_BLOCKSIZE;
+    sparkey_compression_type compression_type = SPARKEY_COMPRESSION_NONE;
+    while ((opt_char = getopt (argc, argv, "b:c:")) != -1) {
+      switch (opt_char) {
+      case 'b':
+        if (sscanf(optarg, "%d", &block_size) != 1) {
+          fprintf(stderr, "Block size must be an integer, but was '%s'\n", optarg);
+          return 1;
+        }
+        if (block_size > SNAPPY_MAX_BLOCKSIZE || block_size < SNAPPY_MIN_BLOCKSIZE) {
+          fprintf(stderr, "Block size %d, not in range. Max is %d, min is %d\n",
+          block_size, SNAPPY_MAX_BLOCKSIZE, SNAPPY_MIN_BLOCKSIZE);
+          return 1;
+        }
+        break;
+      case 'c':
+        if (strcmp(optarg, "none") == 0) {
+          compression_type = SPARKEY_COMPRESSION_NONE;
+        } else if (strcmp(optarg, "snappy") == 0) {
+          compression_type = SPARKEY_COMPRESSION_SNAPPY;
+        } else {
+          fprintf(stderr, "Invalid compression type: '%s'\n", optarg);
+          return 1;
+        }
+        break;
+      case '?':
+        if (optopt == 'b' || optopt == 'c') {
+          fprintf(stderr, "Option -%c requires an argument.\n", optopt);
+        } else if (isprint(optopt)) {
+          fprintf(stderr, "Unknown option '-%c'.\n", optopt);
+        } else {
+          fprintf(stderr, "Unknown option character '\\x%x'.\n", optopt);
+        }
+        return 1;
+      default:
+        fprintf(stderr, "Unknown option parsing failure\n");
+        return 1;
+      }
+    }        
+        
+    if (optind >= argc) {
+      usage_createlog();
+      return 1;
+    }
+
+    const char *log_filename = argv[optind];
+    sparkey_logwriter *writer;
+    assert(sparkey_logwriter_create(&writer, log_filename,
+      compression_type, block_size));
+    assert(sparkey_logwriter_close(&writer));
+    return 0;
+  } else if (strcmp(command, "appendlog") == 0) {
+    opterr = 0;
+    optind = 2;
+    int opt_char;
+    char delimiter = '\t';
+    while ((opt_char = getopt (argc, argv, "d:")) != -1) {
+      switch (opt_char) {
+      case 'd':
+        if (strlen(optarg) != 1) {
+          fprintf(stderr, "delimiter must be one character, but was '%s'\n", optarg);
+          return 1;
+        }
+        delimiter = optarg[0];
+        break;
+      case '?':
+        if (optopt == 'd') {
+          fprintf(stderr, "Option -%c requires an argument.\n", optopt);
+        } else if (isprint(optopt)) {
+          fprintf(stderr, "Unknown option '-%c'.\n", optopt);
+        } else {
+          fprintf(stderr, "Unknown option character '\\x%x'.\n", optopt);
+        }
+        return 1;
+      default:
+        fprintf(stderr, "Unknown option parsing failure\n");
+        return 1;
+      }
+    }        
+        
+    if (optind >= argc) {
+      usage_appendlog();
+      return 1;
+    }
+
+    const char *log_filename = argv[optind];
+    sparkey_logwriter *writer;
+    assert(sparkey_logwriter_append(&writer, log_filename));
+    int rc = append(writer, delimiter, stdin);
+    assert(sparkey_logwriter_close(&writer));
+    return rc;
+  } else if (strcmp(command, "help") == 0 || strcmp(command, "--help") == 0 || strcmp(command, "-h") == 0) {
     usage();
+    return 0;
+  } else {
+    fprintf(stderr, "Unknown command: %s\n", command);
     return 1;
   }
 }
