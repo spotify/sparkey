@@ -24,9 +24,9 @@
 #include "sparkey.h"
 
 void usage() {
-	printf("Usage: sparkey <command> <options>\n");
-	printf("Commands: info [file...]\n");
-	printf("Commands: get <index file> <key>\n");
+	fprintf(stderr, "Usage: sparkey <command> <options>\n");
+	fprintf(stderr, "Commands: info [file...]\n");
+	fprintf(stderr, "Commands: get <index file> <key>\n");
 }
 
 static void assert(sparkey_returncode rc) {
@@ -53,7 +53,7 @@ int info(int argv, const char **args) {
         printf("%s\n", args[i]);
         print_hashheader(&hashheader);
       } else {
-        printf("%s is neither a sparkey log file (%s) nor an index file (%s)\n", filename, sparkey_errstring(res), sparkey_errstring(res2));
+        fprintf(stderr, "%s is neither a sparkey log file (%s) nor an index file (%s)\n", filename, sparkey_errstring(res), sparkey_errstring(res2));
         retval = 1;
       }
     }
@@ -106,14 +106,14 @@ int main(int argv, const char **args) {
     const char *index_filename = args[2];
     char *log_filename = sparkey_create_log_filename(index_filename);
     if (log_filename == NULL) {
-      printf("index filename must end with .spi\n");
+      fprintf(stderr, "index filename must end with .spi\n");
       return 1;
     }
     int retval = get(args[2], log_filename, args[3]);
     free(log_filename);
     return retval;
   } else {
-    printf("Unknown command: %s\n", args[1]);
+    fprintf(stderr, "Unknown command: %s\n", args[1]);
     usage();
     return 1;
   }
