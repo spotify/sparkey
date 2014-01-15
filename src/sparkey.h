@@ -643,6 +643,14 @@ uint64_t sparkey_hash_numcollisions(sparkey_hashreader *reader);
  */
 char * sparkey_create_log_filename(const char *index_filename);
 
+/**
+ * Allocates and creates a string denoting an index file from a log file.
+ * This is simply a string replacement of .spl$ to .spi$
+ * @param log_filename the filename representing the log file
+ * @returns NULL if the log_filename does not end with ".spl"
+ */
+char * sparkey_create_index_filename(const char *log_filename);
+
 #ifdef __cplusplus
 }
 #endif
