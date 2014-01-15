@@ -40,7 +40,8 @@ static void usage() {
   fprintf(stderr, "  writehash - Generate a hash file from a log file.\n");
   fprintf(stderr, "  createlog - Create an empty log file.\n");
   fprintf(stderr, "  appendlog - Append key-value pairs to an existing log file.\n");
-  fprintf(stderr, "  help      - Show this help text.\n");
+  fprintf(stderr, "  help      - Show this help text.\n\n");
+  fprintf(stderr, "Invoking each subcommand without arguments gives usage information\n");
 }
 
 static void usage_info() {
@@ -231,6 +232,11 @@ put_fail:
   return 1;
 }
 
+static int ends_with(const char *str, const char *suffix) {
+  size_t len_suffix = strlen(suffix);
+  return strncmp(str + strlen(str) - len_suffix, suffix, len_suffix) == 0;
+}
+
 int main(int argc, char * const *argv) {
   if (argc < 2) {
     usage();
@@ -321,6 +327,10 @@ int main(int argc, char * const *argv) {
     }
 
     const char *log_filename = argv[optind];
+    if (!ends_with(log_filename, ".spl")) {
+      fprintf(stderr, "Refusing to create log file '%s', does not end with '.spl'\n", log_filename);
+      return 1;
+    }
     sparkey_logwriter *writer;
     assert(sparkey_logwriter_create(&writer, log_filename,
       compression_type, block_size));
