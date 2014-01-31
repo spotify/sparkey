@@ -388,6 +388,20 @@ uint64_t sparkey_logreader_maxkeylen(sparkey_logreader *log);
 uint64_t sparkey_logreader_maxvaluelen(sparkey_logreader *log);
 
 /**
+ * Get the blocksize for a reader
+ * @param log a reference to a logreader.
+ * @returns the blocksize
+ */
+int sparkey_logreader_get_compression_blocksize(sparkey_logreader *log);
+
+/**
+ * Get the compression type for a reader
+ * @param log a reference to a logreader.
+ * @returns the compression type
+ */
+sparkey_compression_type sparkey_logreader_get_compression_type(sparkey_logreader *log);
+
+/**
  * Initializes a logiter and associates it with a logreader.
  * The logreader must be open. The logiter is not threadsafe.
  * @param iter a double reference to an uninitialized logiter. Will be set on success.

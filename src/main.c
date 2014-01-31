@@ -40,6 +40,9 @@ static void usage() {
   fprintf(stderr, "  writehash - Generate a hash file from a log file.\n");
   fprintf(stderr, "  createlog - Create an empty log file.\n");
   fprintf(stderr, "  appendlog - Append key-value pairs to an existing log file.\n");
+  fprintf(stderr, "  rewrite   - Rewrite an existing log/index file pair, "
+                                "trimming away all replaced entries and "
+                                "possibly changing the compression format.\n");
   fprintf(stderr, "  help      - Show this help text.\n");
 }
 
@@ -80,6 +83,16 @@ static void usage_appendlog() {
   fprintf(stderr, "  <key> <delimiter> <value> <newline>\n");
   fprintf(stderr, "Options:\n");
   fprintf(stderr, "  -d <char>  Delimiter char to split input records on [default: TAB]\n");
+}
+
+static void usage_rewrite() {
+  fprintf(stderr, "Usage: sparkey rewrite [-c <none|snappy> | -b <n>] <input.spi> <output.spi>\n");
+  fprintf(stderr, "  Iterate over all entries in <file.spi> and create a new index and log pair\n");
+  fprintf(stderr, "Options:\n");
+  fprintf(stderr, "  -c <none|snappy>  Compression algorithm [default: same as before]\n");
+  fprintf(stderr, "  -b <n>            Compression blocksize [default: same as before]\n");
+  fprintf(stderr, "                    [min: %d, max: %d]\n",
+    SNAPPY_MIN_BLOCKSIZE, SNAPPY_MAX_BLOCKSIZE);
 }
 
 static void assert(sparkey_returncode rc) {
@@ -366,6 +379,121 @@ int main(int argc, char * const *argv) {
     int rc = append(writer, delimiter, stdin);
     assert(sparkey_logwriter_close(&writer));
     return rc;
+  } else if (strcmp(command, "rewrite") == 0) {
+    opterr = 0;
+    optind = 2;
+    int opt_char;
+    int block_size = -1;
+    sparkey_compression_type compression_type = SPARKEY_COMPRESSION_NONE;
+    int compression_set = 0;
+    while ((opt_char = getopt (argc, argv, "b:c:")) != -1) {
+      switch (opt_char) {
+      case 'b':
+        if (sscanf(optarg, "%d", &block_size) != 1) {
+          fprintf(stderr, "Block size must be an integer, but was '%s'\n", optarg);
+          return 1;
+        }
+        if (block_size > SNAPPY_MAX_BLOCKSIZE || block_size < SNAPPY_MIN_BLOCKSIZE) {
+          fprintf(stderr, "Block size %d, not in range. Max is %d, min is %d\n",
+          block_size, SNAPPY_MAX_BLOCKSIZE, SNAPPY_MIN_BLOCKSIZE);
+          return 1;
+        }
+        break;
+      case 'c':
+        compression_set = 1;
+        if (strcmp(optarg, "none") == 0) {
+          compression_type = SPARKEY_COMPRESSION_NONE;
+        } else if (strcmp(optarg, "snappy") == 0) {
+          compression_type = SPARKEY_COMPRESSION_SNAPPY;
+        } else {
+          fprintf(stderr, "Invalid compression type: '%s'\n", optarg);
+          return 1;
+        }
+        break;
+      case '?':
+        if (optopt == 'b' || optopt == 'c') {
+          fprintf(stderr, "Option -%c requires an argument.\n", optopt);
+        } else if (isprint(optopt)) {
+          fprintf(stderr, "Unknown option '-%c'.\n", optopt);
+        } else {
+          fprintf(stderr, "Unknown option character '\\x%x'.\n", optopt);
+        }
+        return 1;
+      default:
+        fprintf(stderr, "Unknown option parsing failure\n");
+        return 1;
+      }
+    }
+
+    if (optind + 1 >= argc) {
+      usage_rewrite();
+      return 1;
+    }
+
+    const char *input_index_filename = argv[optind];
+    const char *output_index_filename = argv[optind + 1];
+
+    if (strcmp(input_index_filename, output_index_filename) == 0) {
+      fprintf(stderr, "input and output must be different.\n");
+      return 1;
+    }
+
+    char *input_log_filename = sparkey_create_log_filename(input_index_filename);
+    if (input_log_filename == NULL) {
+      fprintf(stderr, "input filename must end with .spi but was '%s'\n", input_index_filename);
+      return 1;
+    }
+
+    char *output_log_filename = sparkey_create_log_filename(output_index_filename);
+    if (output_log_filename == NULL) {
+      fprintf(stderr, "output filename must end with .spi but was '%s'\n", output_index_filename);
+      return 1;
+    }
+
+    sparkey_hashreader *reader;
+    assert(sparkey_hash_open(&reader, input_index_filename, input_log_filename));
+    sparkey_logreader *logreader = sparkey_hash_getreader(reader);
+    if (!compression_set) {
+      compression_type = sparkey_logreader_get_compression_type(logreader);
+    }
+    if (block_size == -1) {
+      block_size = sparkey_logreader_get_compression_blocksize(logreader);
+    }
+
+    // TODO: skip rewrite if compression type and block size are unchanged, and there is no garbage in the log
+
+    sparkey_logwriter *writer;
+    assert(sparkey_logwriter_create(&writer, output_log_filename, compression_type, block_size));
+
+    sparkey_logiter *iter;
+    assert(sparkey_logiter_create(&iter, logreader));
+
+    uint8_t *keybuf = malloc(sparkey_logreader_maxkeylen(logreader));
+    uint8_t *valuebuf = malloc(sparkey_logreader_maxvaluelen(logreader));
+
+    while (1) {
+      assert(sparkey_logiter_next(iter, logreader));
+      if (sparkey_logiter_state(iter) != SPARKEY_ITER_ACTIVE) {
+        break;
+      }
+      uint64_t wanted_keylen = sparkey_logiter_keylen(iter);
+      uint64_t actual_keylen;
+      assert(sparkey_logiter_fill_key(iter, logreader, wanted_keylen, keybuf, &actual_keylen));
+      uint64_t wanted_valuelen = sparkey_logiter_valuelen(iter);
+      uint64_t actual_valuelen;
+      assert(sparkey_logiter_fill_value(iter, logreader, wanted_valuelen, valuebuf, &actual_valuelen));
+
+      assert(sparkey_logwriter_put(writer, wanted_keylen, keybuf, wanted_valuelen, valuebuf));
+    }
+    free(keybuf);
+    free(valuebuf);
+    sparkey_logiter_close(&iter);
+    assert(sparkey_logwriter_close(&writer));
+    sparkey_hash_close(&reader);
+
+    writehash(output_index_filename, output_log_filename);
+
+    return 0;
   } else if (strcmp(command, "help") == 0 || strcmp(command, "--help") == 0 || strcmp(command, "-h") == 0) {
     usage();
     return 0;
