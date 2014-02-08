@@ -485,6 +485,14 @@ uint64_t sparkey_logreader_maxvaluelen(sparkey_logreader *log) {
   return log->header.max_value_len;
 }
 
+int sparkey_logreader_get_compression_blocksize(sparkey_logreader *log) {
+  return log->header.compression_block_size;
+}
+
+sparkey_compression_type sparkey_logreader_get_compression_type(sparkey_logreader *log) {
+  return log->header.compression_type;
+}
+
 sparkey_iter_state sparkey_logiter_state(sparkey_logiter *iter) {
   return iter->state;
 }
