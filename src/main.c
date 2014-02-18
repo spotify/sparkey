@@ -219,10 +219,9 @@ static int append(sparkey_logwriter *writer, char delimiter, FILE *input) {
   delim[1] = '\0';
 
   for (size_t end = read_line(&line, &size, input); line[end] == '\n'; end = read_line(&line, &size, input)) {
-    line[end] = '\0'; // trim '\n' off the end
     // Split on the first delimiter
     key = strtok(line, delim);
-    value = strtok(NULL, delim);
+    value = strtok(NULL, "\n");
     if (value != NULL) {
       // Write to log
       TRY(sparkey_logwriter_put(writer, strlen(key), (uint8_t*)key, strlen(value), (uint8_t*)value), put_fail);

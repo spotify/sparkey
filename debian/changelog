@@ -1,3 +1,9 @@
+sparkey (0.2.0) unstable; urgency=low
+
+  * Make sparkey appendlog only split each input line once on the delimiter
+
+ -- Kristofer Karlsson <krka@spotify.com>  Tue, 18 Feb 2014 15:38:58 +0100
+
 sparkey (0.1.0) unstable; urgency=low
 
   * Initial release.
