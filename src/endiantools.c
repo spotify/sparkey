@@ -40,12 +40,12 @@ static sparkey_returncode _write_full(int fd, uint8_t *buf, size_t count) {
     case EFBIG: return SPARKEY_FILE_SIZE_EXCEEDED;
     case EBADF: return SPARKEY_FILE_CLOSED;
     default:
-      printf("_write_full():%d bug: actual_read = %"PRIu64", wanted = %"PRIu64", errno = %d\n", __LINE__, (uint64_t)actual, (uint64_t)count, errno);
+      fprintf(stderr, "_write_full():%d bug: actual_read = %"PRIu64", wanted = %"PRIu64", errno = %d\n", __LINE__, (uint64_t)actual, (uint64_t)count, errno);
       return SPARKEY_INTERNAL_ERROR;
     }
   }
   if ((size_t) actual < count) {
-    printf("_write_full():%d bug: actual_read = %"PRIu64", wanted = %"PRIu64", errno = %d\n", __LINE__, (uint64_t)actual, (uint64_t)count, errno);
+    fprintf(stderr, "_write_full():%d bug: actual_read = %"PRIu64", wanted = %"PRIu64", errno = %d\n", __LINE__, (uint64_t)actual, (uint64_t)count, errno);
     return SPARKEY_INTERNAL_ERROR;
   }
   return SPARKEY_SUCCESS;
