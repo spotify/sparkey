@@ -101,7 +101,7 @@ static sparkey_returncode hash_delete(uint64_t wanted_slot, uint64_t hash, uint8
     int entry_index2 = (int) (position2) & hash_header->entry_block_bitmask;
     position2 >>= hash_header->entry_block_bits;
     if (position2 < log->header.header_size || position2 >= log->header.data_end ) {
-      printf("hash_delete():%d bug: found pointer outside of range %"PRIu64"\n", __LINE__, position2);
+      fprintf(stderr, "hash_delete():%d bug: found pointer outside of range %"PRIu64"\n", __LINE__, position2);
       return SPARKEY_INTERNAL_ERROR;
     }
     if (hash == hash2) {
@@ -111,7 +111,7 @@ static sparkey_returncode hash_delete(uint64_t wanted_slot, uint64_t hash, uint8
       uint64_t keylen2 = ra_iter->keylen;
       uint64_t valuelen2 = ra_iter->valuelen;
       if (ra_iter->type != SPARKEY_ENTRY_PUT) {
-        printf("hash_delete():%d bug: expected a put entry but found %d\n", __LINE__, ra_iter->type);
+        fprintf(stderr, "hash_delete():%d bug: expected a put entry but found %d\n", __LINE__, ra_iter->type);
         return SPARKEY_INTERNAL_ERROR;
       }
       if (iter->keylen == keylen2) {
@@ -162,7 +162,7 @@ static sparkey_returncode hash_delete(uint64_t wanted_slot, uint64_t hash, uint8
       slot = 0;
     }
   }
-  printf("hash_put():%d bug: unreachable statement\n", __LINE__);
+  fprintf(stderr, "hash_put():%d bug: unreachable statement\n", __LINE__);
   return SPARKEY_INTERNAL_ERROR;
 }
 
@@ -194,7 +194,7 @@ static sparkey_returncode hash_put(uint64_t wanted_slot, uint64_t hash, uint8_t 
       uint64_t keylen2 = ra_iter->keylen;
       uint64_t valuelen2 = ra_iter->valuelen;
       if (ra_iter->type != SPARKEY_ENTRY_PUT) {
-        printf("hash_put():%d bug: expected a put entry but found %d\n", __LINE__, ra_iter->type);
+        fprintf(stderr, "hash_put():%d bug: expected a put entry but found %d\n", __LINE__, ra_iter->type);
         return SPARKEY_INTERNAL_ERROR;
       }
       if (iter->keylen == keylen2) {
@@ -228,7 +228,7 @@ static sparkey_returncode hash_put(uint64_t wanted_slot, uint64_t hash, uint8_t 
       slot = 0;
     }
   }
-  printf("hash_put():%d bug: unreachable statement\n", __LINE__);
+  fprintf(stderr, "hash_put():%d bug: unreachable statement\n", __LINE__);
   return SPARKEY_INTERNAL_ERROR;
 }
 
@@ -287,7 +287,7 @@ static sparkey_returncode read_fully(int fd, uint8_t *buf, size_t count) {
   while (count > 0) {
     ssize_t actual_read = read(fd, buf, count);
     if (actual_read < 0) {
-      printf("read_fully():%d bug: actual_read = %"PRIu64", errno = %d\n", __LINE__, (uint64_t)actual_read, errno);
+      fprintf(stderr, "read_fully():%d bug: actual_read = %"PRIu64", errno = %d\n", __LINE__, (uint64_t)actual_read, errno);
       return SPARKEY_INTERNAL_ERROR;
     }
     count -= actual_read;
@@ -324,7 +324,7 @@ static sparkey_returncode fill_hash(uint8_t *hashtable, const char *hash_filenam
   uint64_t buffer_size = slot_size * 1024;
   uint8_t *buf = malloc(buffer_size);
   if (buf == NULL) {
-    printf("fill_hash():%d bug: could not malloc %"PRIu64" bytes\n", __LINE__, buffer_size);
+    fprintf(stderr, "fill_hash():%d bug: could not malloc %"PRIu64" bytes\n", __LINE__, buffer_size);
     return SPARKEY_INTERNAL_ERROR;
   }
 
@@ -342,7 +342,7 @@ free:
   free(buf);
   if (close(fd) < 0) {
     if (returncode == SPARKEY_SUCCESS) {
-      printf("fill_hash():%d bug: could not close file. errno = %d\n", __LINE__, errno);
+      fprintf(stderr, "fill_hash():%d bug: could not close file. errno = %d\n", __LINE__, errno);
       returncode = SPARKEY_INTERNAL_ERROR;
     }
   }
@@ -435,7 +435,7 @@ sparkey_returncode sparkey_hash_write(const char *hash_filename, const char *log
   uint64_t hashsize = slot_size * hash_header.hash_capacity;
   uint8_t *hashtable = malloc(hashsize);
   if (hashtable == NULL) {
-    printf("sparkey_hash_write():%d bug: could not malloc %"PRIu64" bytes\n", __LINE__, hashsize);
+    fprintf(stderr, "sparkey_hash_write():%d bug: could not malloc %"PRIu64" bytes\n", __LINE__, hashsize);
     returncode = SPARKEY_INTERNAL_ERROR;
     goto close_iter;
   }
@@ -460,7 +460,7 @@ sparkey_returncode sparkey_hash_write(const char *hash_filename, const char *log
     case SPARKEY_ITER_ACTIVE:
       break;
     default:
-      printf("sparkey_hash_write():%d bug: invalid iter state: %d\n", __LINE__, iter->state);
+      fprintf(stderr, "sparkey_hash_write():%d bug: invalid iter state: %d\n", __LINE__, iter->state);
       returncode = SPARKEY_INTERNAL_ERROR;
       goto free_hashtable;
       break;

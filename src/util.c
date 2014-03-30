@@ -30,7 +30,7 @@ sparkey_returncode sparkey_open_returncode(int e) {
   case ENOENT: return SPARKEY_FILE_NOT_FOUND;
   case EOVERFLOW: return SPARKEY_FILE_TOO_LARGE;
   default:
-    printf("_sparkey_open_returncode():%d error: errno = %d\n", __LINE__, e);
+    fprintf(stderr, "_sparkey_open_returncode():%d error: errno = %d\n", __LINE__, e);
     return SPARKEY_INTERNAL_ERROR;
   }
 }
@@ -45,7 +45,7 @@ sparkey_returncode sparkey_create_returncode(int e) {
   case ENFILE:
   case EMFILE: return SPARKEY_TOO_MANY_OPEN_FILES;
   default:
-    printf("_sparkey_create_returncode():%d error: errno = %d\n", __LINE__, e);
+    fprintf(stderr, "_sparkey_create_returncode():%d error: errno = %d\n", __LINE__, e);
     return SPARKEY_INTERNAL_ERROR;
   }
 }
@@ -59,7 +59,7 @@ sparkey_returncode sparkey_remove_returncode(int e) {
   case EISDIR: return SPARKEY_FILE_IS_DIRECTORY;
   case EOVERFLOW: return SPARKEY_FILE_TOO_LARGE;
   default:
-    printf("_sparkey_remove_returncode():%d error: errno = %d\n", __LINE__, e);
+    fprintf(stderr, "_sparkey_remove_returncode():%d error: errno = %d\n", __LINE__, e);
     return SPARKEY_INTERNAL_ERROR;
   }
 }
