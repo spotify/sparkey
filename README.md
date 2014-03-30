@@ -4,6 +4,11 @@ library for working with sparkey index and log files (`libsparkey`), and a
 command line utility for getting info about and reading values from a sparkey
 index/log (`sparkey`).
 
+### Travis
+Continuous integration with [travis](https://travis-ci.org/spotify/sparkey).
+
+[![Build Status](https://travis-ci.org/spotify/sparkey.svg?branch=master)](https://travis-ci.org/spotify/sparkey)
+
 Dependencies
 ------------
 
