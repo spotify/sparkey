@@ -383,10 +383,6 @@ sparkey_returncode sparkey_hash_write(const char *hash_filename, const char *log
     hash_header.garbage_size = old_header.garbage_size;
 
     copy_old = 1;
-    if (old_header.data_end == log->header.data_end) {
-      // Nothing needs to be done - just exit
-      goto close_iter;
-    }
     old_hash_size = old_header.hash_size;
   } else {
     cap = log_header.num_puts * 1.3;
@@ -447,6 +443,10 @@ sparkey_returncode sparkey_hash_write(const char *hash_filename, const char *log
   hash_header.hash_collisions = 0;
 
   if (copy_old) {
+    if (old_header.data_end == log->header.data_end) {
+      // Nothing needs to be done - just exit
+      goto close_iter;
+    }
     TRY(fill_hash(hashtable, hash_filename, &old_header, &hash_header), free_hashtable);
     TRY(sparkey_logiter_seek(iter, log, start), free_hashtable);
   }
