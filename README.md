@@ -39,6 +39,7 @@ Related projects
 * [spotify/sparkey-java: Official java implementation](https://github.com/spotify/sparkey-java)
 * [emnl/gnista: Unofficial ruby bindings](https://github.com/emnl/gnista)
 * [adamtanner/sparkey: Unofficial ruby bindings](https://github.com/adamtanner/sparkey)
+* [stephenmathieson/node-sparkey: Unofficial node bindings](https://github.com/stephenmathieson/node-sparkey)
 
 Description
 ------------
