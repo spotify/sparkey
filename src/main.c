@@ -43,6 +43,7 @@ static void usage() {
   fprintf(stderr, "  rewrite   - Rewrite an existing log/index file pair, "
                                 "trimming away all replaced entries and "
                                 "possibly changing the compression format.\n");
+  fprintf(stderr, "  diff      - Write the difference between two indices to a new index.\n");
   fprintf(stderr, "  help      - Show this help text.\n");
 }
 
@@ -93,6 +94,11 @@ static void usage_rewrite() {
   fprintf(stderr, "  -b <n>            Compression blocksize [default: same as before]\n");
   fprintf(stderr, "                    [min: %d, max: %d]\n",
     SNAPPY_MIN_BLOCKSIZE, SNAPPY_MAX_BLOCKSIZE);
+}
+
+static void usage_diff() {
+  fprintf(stderr, "Usage: sparkey diff <first.spi> <second.spi> <diff.spi>\n");
+  fprintf(stderr, "  Creates a new index <diff.spi> which contains all the entries in <second.spi> that is not in <first.spi>\n");
 }
 
 static void assert(sparkey_returncode rc) {
@@ -241,6 +247,76 @@ put_fail:
   free(line);
   fprintf(stderr, "Cannot append line to log file, aborting early: %s\n", sparkey_errstring(returncode));
   return 1;
+}
+
+static int diff(const char *first_index, const char *first_log,
+                const char *second_index, const char *second_log,
+                const char *diff_index, const char *diff_log) {
+
+  sparkey_hashreader *first_reader;
+  assert(sparkey_hash_open(&first_reader, first_index, first_log));
+  sparkey_logreader *first_logreader = sparkey_hash_getreader(first_reader);
+
+  sparkey_hashreader *second_reader;
+  assert(sparkey_hash_open(&second_reader, second_index, second_log));
+  sparkey_logreader *second_logreader = sparkey_hash_getreader(second_reader);
+
+  sparkey_compression_type compression_type = sparkey_logreader_get_compression_type(second_logreader);
+  int compression_blocksize = sparkey_logreader_get_compression_blocksize(second_logreader);
+
+  sparkey_logwriter *diff_writer;
+  assert(sparkey_logwriter_create(&diff_writer, diff_log, compression_type, compression_blocksize));
+
+  uint8_t *keybuf = malloc(sparkey_logreader_maxkeylen(second_logreader));
+  uint8_t *valuebuf = malloc(sparkey_logreader_maxvaluelen(second_logreader));
+
+  sparkey_logiter *first_iter;
+  assert(sparkey_logiter_create(&first_iter, first_logreader));
+
+  sparkey_logiter *second_iter;
+  assert(sparkey_logiter_create(&second_iter, second_logreader));
+  while (1) {
+    assert(sparkey_logiter_hashnext(second_iter, second_reader));
+    if (sparkey_logiter_state(second_iter) != SPARKEY_ITER_ACTIVE) {
+      break;
+    }
+    uint64_t wanted_keylen = sparkey_logiter_keylen(second_iter);
+    uint64_t actual_keylen;
+    assert(sparkey_logiter_fill_key(second_iter, second_logreader, wanted_keylen, keybuf, &actual_keylen));
+
+    assert(sparkey_hash_get(first_reader, keybuf, actual_keylen, first_iter));
+    int write = 0;
+    if (sparkey_logiter_state(first_iter) != SPARKEY_ITER_ACTIVE) {
+      write = 1;
+    } else {
+      int res;
+      assert(sparkey_logiter_valuecmp(first_iter, first_logreader, second_iter, second_logreader, &res));
+      if (res != 0) {
+        write = 1;
+      }
+    }
+    if (write) {
+      assert(sparkey_logiter_reset(second_iter, second_logreader));
+      uint64_t wanted_valuelen = sparkey_logiter_valuelen(second_iter);
+      uint64_t actual_valuelen;
+      assert(sparkey_logiter_fill_value(second_iter, second_logreader, wanted_valuelen, valuebuf, &actual_valuelen));
+      assert(sparkey_logwriter_put(diff_writer, actual_keylen, keybuf, actual_valuelen, valuebuf));
+    }
+  }
+
+  free(keybuf);
+  free(valuebuf);
+
+  assert(sparkey_logwriter_close(&diff_writer));
+  assert(sparkey_hash_write(diff_index, diff_log, 0));
+
+  sparkey_logiter_close(&first_iter);
+  sparkey_hash_close(&first_reader);
+
+  sparkey_logiter_close(&second_iter);
+  sparkey_hash_close(&second_reader);
+
+  return 0;
 }
 
 int main(int argc, char * const *argv) {
@@ -484,6 +560,7 @@ int main(int argc, char * const *argv) {
 
       assert(sparkey_logwriter_put(writer, wanted_keylen, keybuf, wanted_valuelen, valuebuf));
     }
+
     free(keybuf);
     free(valuebuf);
     sparkey_logiter_close(&iter);
@@ -493,6 +570,40 @@ int main(int argc, char * const *argv) {
     writehash(output_index_filename, output_log_filename);
 
     return 0;
+  } else if (strcmp(command, "diff") == 0) {
+    if (argc < 5) {
+      usage_diff();
+      return 1;
+    }
+
+    const char *first_index_filename = argv[2];
+    char *first_log_filename = sparkey_create_log_filename(first_index_filename);
+    if (first_log_filename == NULL) {
+      fprintf(stderr, "first index filename must end with .spi\n");
+      return 1;
+    }
+
+    const char *second_index_filename = argv[3];
+    char *second_log_filename = sparkey_create_log_filename(second_index_filename);
+    if (second_log_filename == NULL) {
+      fprintf(stderr, "second index filename must end with .spi\n");
+      return 1;
+    }
+
+    const char *diff_index_filename = argv[4];
+    char *diff_log_filename = sparkey_create_log_filename(diff_index_filename);
+    if (diff_log_filename == NULL) {
+      fprintf(stderr, "diff index filename must end with .spi\n");
+      return 1;
+    }
+
+    int retval = diff(first_index_filename, first_log_filename,
+                      second_index_filename, second_log_filename,
+                      diff_index_filename, diff_log_filename);
+    free(first_log_filename);
+    free(second_log_filename);
+    free(diff_log_filename);
+    return retval;
   } else if (strcmp(command, "help") == 0 || strcmp(command, "--help") == 0 || strcmp(command, "-h") == 0) {
     usage();
     return 0;
@@ -501,3 +612,4 @@ int main(int argc, char * const *argv) {
     return 1;
   }
 }
+
