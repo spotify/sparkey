@@ -285,17 +285,17 @@ static int diff(const char *first_index, const char *first_log,
     assert(sparkey_logiter_fill_key(second_iter, second_logreader, wanted_keylen, keybuf, &actual_keylen));
 
     assert(sparkey_hash_get(first_reader, keybuf, actual_keylen, first_iter));
-    int write = 0;
+    int should_write = 0;
     if (sparkey_logiter_state(first_iter) != SPARKEY_ITER_ACTIVE) {
-      write = 1;
+      should_write = 1;
     } else {
       int res;
       assert(sparkey_logiter_valuecmp(first_iter, first_logreader, second_iter, second_logreader, &res));
       if (res != 0) {
-        write = 1;
+        should_write = 1;
       }
     }
-    if (write) {
+    if (should_write) {
       assert(sparkey_logiter_reset(second_iter, second_logreader));
       uint64_t wanted_valuelen = sparkey_logiter_valuelen(second_iter);
       uint64_t actual_valuelen;
