@@ -476,6 +476,50 @@ sparkey_returncode sparkey_logiter_keycmp(sparkey_logiter *iter1, sparkey_logite
   return SPARKEY_SUCCESS;
 }
 
+sparkey_returncode sparkey_logiter_valuecmp(sparkey_logiter *iter1, sparkey_logreader *log1, sparkey_logiter *iter2, sparkey_logreader *log2, int *res) {
+  uint8_t *first;
+  uint64_t first_len;
+  uint8_t *second;
+  uint64_t second_len;
+
+  RETHROW(sparkey_logiter_valuechunk(iter1, log1, 1 << 30, &first, &first_len));
+  RETHROW(sparkey_logiter_valuechunk(iter2, log2, 1 << 30, &second, &second_len));
+
+  while (1) {
+    if (first_len == 0 && second_len == 0) {
+      break;
+    }
+    if (first_len == 0) {
+      *res = -1;
+      return SPARKEY_SUCCESS;
+    }
+    if (second_len == 0) {
+      *res = 1;
+      return SPARKEY_SUCCESS;
+    }
+
+    uint64_t cmp_len = min64(first_len, second_len);
+    int v = memcmp(first, second, cmp_len);
+    if (v) {
+      *res = v;
+      return SPARKEY_SUCCESS;
+    }
+    first += cmp_len;
+    first_len -= cmp_len;
+    second += cmp_len;
+    second_len -= cmp_len;
+
+    if (first_len == 0) {
+      RETHROW(sparkey_logiter_valuechunk(iter1, log1, 1 << 30, &first, &first_len));
+    }
+    if (second_len == 0) {
+      RETHROW(sparkey_logiter_valuechunk(iter2, log2, 1 << 30, &second, &second_len));
+    }
+  }
+  *res = 0;
+  return SPARKEY_SUCCESS;
+}
+
 
 uint64_t sparkey_logreader_maxkeylen(sparkey_logreader *log) {
   return log->header.max_key_len;

@@ -542,10 +542,25 @@ sparkey_returncode sparkey_logiter_fill_value(sparkey_logiter *iter, sparkey_log
  * @param log an open logreader associated with iter1 and iter2.
  * @param res (output parameter) reference to a variable holding the result of the comparison.
  * It will be zero if the keys are equal, negative if key1 is smaller than key2 and positive if key1 is larger than key2.
- * The behaviour is thus Like memcmp.
+ * The behaviour is thus like memcmp.
  * @returns SPARKEY_SUCCESS if all goes well. Otherwise a returncode indicating the error.
  */
 sparkey_returncode sparkey_logiter_keycmp(sparkey_logiter *iter1, sparkey_logiter *iter2, sparkey_logreader *log, int *res);
+
+/**
+ * Compares the values of two iterators.
+ * It assumes that the iterators are both clean, i.e. nothing has been consumed from the current entry.
+ *
+ * @param iter1 an open logiter
+ * @param log1 an open logreader associated with iter1.
+ * @param iter2 an open logiter
+ * @param log2 an open logreader associated with iter2.
+ * @param res (output parameter) reference to a variable holding the result of the comparison.
+ * It will be zero if the keys are equal, negative if key1 is smaller than key2 and positive if key1 is larger than key2.
+ * The behaviour is thus like memcmp.
+ * @returns SPARKEY_SUCCESS if all goes well. Otherwise a returncode indicating the error.
+ */
+sparkey_returncode sparkey_logiter_valuecmp(sparkey_logiter *iter1, sparkey_logreader *log1, sparkey_logiter *iter2, sparkey_logreader *log2, int *res);
 
 /**
  * Get the state for an iterator.
