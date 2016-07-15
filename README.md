@@ -13,7 +13,7 @@ Dependencies
 ------------
 
 * GNU build system (autoconf, automake, libtool)
-* [Snappy](https://code.google.com/p/snappy/)
+* [Snappy](http://google.github.io/snappy/)
 
 Optional
 
