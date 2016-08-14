@@ -76,8 +76,9 @@ static inline char * _create_filename(const char *input, const char *from, char 
 
   if (memcmp(&input[l - strlen(from)], from, strlen(from))) return NULL;
 
-  char *output = strdup(input);
+  char *output = malloc(sizeof(char) * (l + 1));
   if (output == NULL) return NULL;
+  strcpy(output, input);
 
   output[l - 1] = to;
   return output;
