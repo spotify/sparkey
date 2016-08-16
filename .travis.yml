@@ -5,5 +5,4 @@ before_install:
  - sudo apt-get install -qq libsnappy-dev
 
 script:
- - autoreconf --install && ./configure && make && make check
  - mkdir build && cd build && cmake .. && make
