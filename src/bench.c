@@ -23,6 +23,7 @@
 #include <sys/stat.h>
 #include <dirent.h>
 #include <errno.h>
+#include <locale.h>
 
 static void _errno_assert(const char *file, int line, int i) {
   if (i != 0) {
@@ -238,7 +239,8 @@ static candidate sparkey_candidate_compressed = {
 /* main */
 
 void test(candidate *c, int n, int lookups) {
-  printf("Testing bulk insert of %d elements and %d random lookups\n", n, lookups);
+  setlocale(LC_NUMERIC, "");
+  printf("Testing bulk insert of %'d elements and %'d random lookups\n", n, lookups);
 
   printf("  Candidate: %s\n", c->name);
   rm_all_rec(c->files());
