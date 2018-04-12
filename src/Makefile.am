@@ -1,4 +1,4 @@
-CFLAGS = -O2 -Wall -Wextra -Wfloat-equal -Wshadow -Wpointer-arith -Werror -pedantic
+CFLAGS = -O2 -Wall -Wextra -Wfloat-equal -Wshadow -Wpointer-arith -Werror -pedantic -Wno-implicit-fallthrough -Werror=format-overflow=0
 
 lib_LTLIBRARIES = libsparkey.la
 libsparkey_la_SOURCES = endiantools.h hashheader.h logheader.h \
