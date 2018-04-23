@@ -74,6 +74,14 @@ users or other services. The fast and efficient bulk writes makes it feasible to
 and the fast random access reads makes it suitable for high throughput low latency services.
 For some services we have been able to saturate network interfaces while keeping cpu usage really low.
 
+Limitations
+-----------
+The hash writing process requires memory allocation of num_entries * 16 * 1.3 bytes.
+This means that you may run out of memory if trying to write a hash index for too many entries.
+For instance, with 16 GB available RAM you may write 825 million entries.
+
+This limitation has been removed in sparkey-java, but it has not yet been implemented in this version.
+
 Usage
 -----
 Sparkey is meant to be used as a library embedded in other software. Take a look at the API documentation which gives examples on how to use it.
