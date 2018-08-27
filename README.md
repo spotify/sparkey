@@ -40,6 +40,7 @@ Related projects
 * [emnl/gnista: Unofficial ruby bindings](https://github.com/emnl/gnista)
 * [adamtanner/sparkey: Unofficial ruby bindings](https://github.com/adamtanner/sparkey)
 * [stephenmathieson/node-sparkey: Unofficial node bindings](https://github.com/stephenmathieson/node-sparkey)
+* [tiegz/sparkey-go: Unofficial go bindings](https://github.com/tiegz/sparkey-go)
 
 Description
 ------------
