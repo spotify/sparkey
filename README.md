@@ -41,6 +41,7 @@ Related projects
 * [adamtanner/sparkey: Unofficial ruby bindings](https://github.com/adamtanner/sparkey)
 * [stephenmathieson/node-sparkey: Unofficial node bindings](https://github.com/stephenmathieson/node-sparkey)
 * [tiegz/sparkey-go: Unofficial go bindings](https://github.com/tiegz/sparkey-go)
+* [dflemstr/sparkey-rs: Unofficial rust bindings](https://github.com/dflemstr/sparkey-rs)
 
 Description
 ------------
