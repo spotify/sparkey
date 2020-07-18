@@ -60,6 +60,12 @@ struct sparkey_compressor sparkey_compressors[] = {
   },
 };
 
-void fixme_unused_variable() {
-  (void)sparkey_compressors;
+int sparkey_uses_compressor(sparkey_compression_type t) {
+  switch (t) {
+    case SPARKEY_COMPRESSION_SNAPPY:
+    case SPARKEY_COMPRESSION_ZSTD:
+      return 1;
+    default:
+      return 0;
+  }
 }

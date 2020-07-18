@@ -56,12 +56,10 @@ sparkey_returncode sparkey_logwriter_create(sparkey_logwriter **log_ref, const c
   if (l == NULL) {
     TRY(SPARKEY_INTERNAL_ERROR, error);
   }
-  switch (compression_type) {
-  case SPARKEY_COMPRESSION_NONE:
+  if (compression_type == SPARKEY_COMPRESSION_NONE) {
     compression_block_size = 0;
     l->compressed = NULL;
-    break;
-  case SPARKEY_COMPRESSION_SNAPPY:
+  } else if (sparkey_uses_compressor(compression_type)) {
     if (compression_block_size < 10) {
       TRY(SPARKEY_INVALID_COMPRESSION_BLOCK_SIZE, error);
     }
@@ -70,8 +68,7 @@ sparkey_returncode sparkey_logwriter_create(sparkey_logwriter **log_ref, const c
     if (l->compressed == NULL) {
       TRY(SPARKEY_INTERNAL_ERROR, error);
     }
-    break;
-  default:
+  } else {
     TRY(SPARKEY_INVALID_COMPRESSION_TYPE, error);
   }
 
@@ -140,20 +137,17 @@ sparkey_returncode sparkey_logwriter_append(sparkey_logwriter **log_ref, const c
     TRY(SPARKEY_UNSUPPORTED_LOG_MINOR_VERSION, error);
   }
 
-  switch (log->header.compression_type) {
-  case SPARKEY_COMPRESSION_NONE:
+  if (log->header.compression_type == SPARKEY_COMPRESSION_NONE) {
     log->header.compression_block_size = 0;
     log->compressed = NULL;
-    break;
-  case SPARKEY_COMPRESSION_SNAPPY:
+  } else if (sparkey_uses_compressor(log->header.compression_type)) {
     if (log->header.compression_block_size < 10) {
       TRY(SPARKEY_INVALID_COMPRESSION_BLOCK_SIZE, error);
     }
     log->max_compressed_size = sparkey_compressors[log->header.compression_type].max_compressed_size(
       log->header.compression_block_size);
     log->compressed = malloc(log->max_compressed_size);
-    break;
-  default:
+  } else {
     TRY(SPARKEY_INVALID_COMPRESSION_TYPE, error);
   }
 
@@ -276,14 +270,12 @@ static sparkey_returncode log_add(sparkey_logwriter *log, uint64_t num1, uint64_
 
   *datasize = written1 + written2 + len1 + len2;
   uint64_t remaining;
-  switch (log->header.compression_type) {
-  case SPARKEY_COMPRESSION_NONE:
+  if (log->header.compression_type == SPARKEY_COMPRESSION_NONE) {
     RETHROW(buf_add(&log->file_buf, log->fd, buf1, written1));
     RETHROW(buf_add(&log->file_buf, log->fd, buf2, written2));
     RETHROW(buf_add(&log->file_buf, log->fd, data1, len1));
     RETHROW(buf_add(&log->file_buf, log->fd, data2, len2));
-    break;
-  case SPARKEY_COMPRESSION_SNAPPY:
+  } else if (sparkey_uses_compressor(log->header.compression_type)) {
     remaining = buf_remaining(&log->block_buf);
     // todo: make it smarter by checking if it's better to flush directly
     uint64_t fits_in_one = written1 + written2 + len1 + len2 <= buf_size(&log->block_buf);
@@ -300,8 +292,7 @@ static sparkey_returncode log_add(sparkey_logwriter *log, uint64_t num1, uint64_
     if (log->flushed && buf_used(&log->block_buf) > 0) {
       RETHROW(flush_snappy(log));
     }
-    break;
-  default:
+  } else {
     return SPARKEY_INTERNAL_ERROR;
   }
   return SPARKEY_SUCCESS;

@@ -94,5 +94,6 @@ struct sparkey_compressor {
 };
 
 extern struct sparkey_compressor sparkey_compressors[3];
+int sparkey_uses_compressor(sparkey_compression_type t);
 
 #endif
