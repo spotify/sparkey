@@ -174,7 +174,7 @@ error:
   return returncode;
 }
 
-static sparkey_returncode flush_snappy(sparkey_logwriter *log) {
+static sparkey_returncode flush_compressed(sparkey_logwriter *log) {
   log->flushed = 1;
   if (log->entry_count > (int) log->header.max_entries_per_block) {
     log->header.max_entries_per_block = log->entry_count;
@@ -204,7 +204,7 @@ static sparkey_returncode flush_snappy(sparkey_logwriter *log) {
 sparkey_returncode sparkey_logwriter_flush(sparkey_logwriter *log) {
   RETHROW(assert_writer_open(log));
   if (buf_used(&log->block_buf) > 0) {
-    RETHROW(flush_snappy(log));
+    RETHROW(flush_compressed(log));
   }
   if (buf_used(&log->file_buf) > 0) {
     RETHROW(buf_flushfile(&log->file_buf, log->fd));
@@ -240,7 +240,7 @@ sparkey_returncode sparkey_logwriter_close(sparkey_logwriter **log) {
   return SPARKEY_SUCCESS;
 }
 
-static sparkey_returncode snappy_add(sparkey_logwriter *log, const uint8_t *data, ptrdiff_t len) {
+static sparkey_returncode compressed_add(sparkey_logwriter *log, const uint8_t *data, ptrdiff_t len) {
   sparkey_buf *block_buf = &log->block_buf;
 
   while (1) {
@@ -254,7 +254,7 @@ static sparkey_returncode snappy_add(sparkey_logwriter *log, const uint8_t *data
       block_buf->cur += remaining;
       data += remaining;
       len -= remaining;
-      RETHROW(flush_snappy(log));
+      RETHROW(flush_compressed(log));
     }
   }
   return SPARKEY_SUCCESS;
@@ -281,16 +281,16 @@ static sparkey_returncode log_add(sparkey_logwriter *log, uint64_t num1, uint64_
     uint64_t fits_in_one = written1 + written2 + len1 + len2 <= buf_size(&log->block_buf);
     uint64_t doesnt_fit_this = written1 + written2 + len1 + len2 > buf_remaining(&log->block_buf);
     if ((remaining < written1 + written2) || (fits_in_one && doesnt_fit_this)) {
-      RETHROW(flush_snappy(log));
+      RETHROW(flush_compressed(log));
     }
     log->entry_count++;
     log->flushed = 0;
-    RETHROW(snappy_add(log, buf1, written1));
-    RETHROW(snappy_add(log, buf2, written2));
-    RETHROW(snappy_add(log, data1, len1));
-    RETHROW(snappy_add(log, data2, len2));
+    RETHROW(compressed_add(log, buf1, written1));
+    RETHROW(compressed_add(log, buf2, written2));
+    RETHROW(compressed_add(log, data1, len1));
+    RETHROW(compressed_add(log, data2, len2));
     if (log->flushed && buf_used(&log->block_buf) > 0) {
-      RETHROW(flush_snappy(log));
+      RETHROW(flush_compressed(log));
     }
   } else {
     return SPARKEY_INTERNAL_ERROR;
