@@ -18,6 +18,9 @@ AM_CONDITIONAL([HAVE_DOXYGEN],
 AC_SEARCH_LIBS([snappy_compress],
   [snappy],,[AC_MSG_ERROR([Could not find snappy])
 ])
+AC_SEARCH_LIBS([ZSTD_compress],
+  [zstd],,[AC_MSG_ERROR([Could not find zstd])
+])
 
 AM_CONDITIONAL([NOT_APPLE], [test x$build_vendor != xapple])
 AM_COND_IF([NOT_APPLE], [
