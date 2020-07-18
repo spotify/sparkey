@@ -87,4 +87,10 @@ struct sparkey_hashreader {
 sparkey_returncode sparkey_logreader_open_noalloc(sparkey_logreader *log, const char *filename);
 void sparkey_logreader_close_nodealloc(sparkey_logreader *log);
 
+struct sparkey_compressor {
+  uint32_t (*max_compressed_size)(uint32_t block_size);
+  sparkey_returncode (*decompress)(uint8_t *input, uint32_t compressed_size, uint8_t *output, uint32_t *uncompressed_size);
+  sparkey_returncode (*compress)(uint8_t *input, uint32_t uncompressed_size, uint8_t *output, uint32_t *compressed_size);
+};
+
 #endif
