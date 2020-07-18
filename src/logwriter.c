@@ -20,8 +20,6 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include <snappy-c.h>
-
 #include "util.h"
 #include "sparkey.h"
 #include "logheader.h"
@@ -67,7 +65,7 @@ sparkey_returncode sparkey_logwriter_create(sparkey_logwriter **log_ref, const c
     if (compression_block_size < 10) {
       TRY(SPARKEY_INVALID_COMPRESSION_BLOCK_SIZE, error);
     }
-    l->max_compressed_size = snappy_max_compressed_length(compression_block_size);
+    l->max_compressed_size = sparkey_compressors[compression_type].max_compressed_size(compression_block_size);
     l->compressed = malloc(l->max_compressed_size);
     if (l->compressed == NULL) {
       TRY(SPARKEY_INTERNAL_ERROR, error);
@@ -151,7 +149,8 @@ sparkey_returncode sparkey_logwriter_append(sparkey_logwriter **log_ref, const c
     if (log->header.compression_block_size < 10) {
       TRY(SPARKEY_INVALID_COMPRESSION_BLOCK_SIZE, error);
     }
-    log->max_compressed_size = snappy_max_compressed_length(log->header.compression_block_size);
+    log->max_compressed_size = sparkey_compressors[log->header.compression_type].max_compressed_size(
+      log->header.compression_block_size);
     log->compressed = malloc(log->max_compressed_size);
     break;
   default:
@@ -189,19 +188,16 @@ static sparkey_returncode flush_snappy(sparkey_logwriter *log) {
   log->entry_count = 0;
   sparkey_buf *block_buf = &log->block_buf;
   uint8_t *compressed = log->compressed;
-  uint32_t max_compressed_size = log->max_compressed_size;
+  uint32_t compressed_size = log->max_compressed_size;
   sparkey_buf *file_buf = &log->file_buf;
   int fd = log->fd;
 
-  size_t compressed_size = max_compressed_size;
-  snappy_status status = snappy_compress((char *) block_buf->start, buf_used(block_buf), (char *) compressed, &compressed_size);
-  switch (status) {
-  case SNAPPY_OK: break;
-  case SNAPPY_INVALID_INPUT:
-  case SNAPPY_BUFFER_TOO_SMALL:
-  default:
-    return SPARKEY_INTERNAL_ERROR;
+  sparkey_returncode ret = sparkey_compressors[log->header.compression_type].compress(
+    block_buf->start, buf_used(block_buf), compressed, &compressed_size);
+  if (ret != SPARKEY_SUCCESS) {
+    return ret;
   }
+
   uint8_t buf1[10];
   ptrdiff_t written1 = write_vlq(buf1, compressed_size);
   RETHROW(buf_add(file_buf, fd, buf1, written1));

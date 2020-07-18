@@ -93,4 +93,6 @@ struct sparkey_compressor {
   sparkey_returncode (*compress)(uint8_t *input, uint32_t uncompressed_size, uint8_t *output, uint32_t *compressed_size);
 };
 
+extern struct sparkey_compressor sparkey_compressors[3];
+
 #endif
