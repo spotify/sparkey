@@ -29,8 +29,9 @@
 #define MINIMUM_CAPACITY (1<<8)
 #define MAXIMUM_CAPACITY (1<<28)
 #define SNAPPY_DEFAULT_BLOCKSIZE (1<<12)
-#define SNAPPY_MAX_BLOCKSIZE (1<<30)
-#define SNAPPY_MIN_BLOCKSIZE (1<<4)
+#define ZSTD_DEFAULT_BLOCKSIZE (1<<14)
+#define COMP_MAX_BLOCKSIZE (1<<30)
+#define COMP_MIN_BLOCKSIZE (1<<4)
 
 static void usage() {
   fprintf(stderr, "Usage: sparkey <command> [<args>]\n");
@@ -66,14 +67,14 @@ static void usage_writehash() {
 }
 
 static void usage_createlog() {
-  fprintf(stderr, "Usage: sparkey createlog [-c <none|snappy> | -b <n>] <file.spl>\n");
+  fprintf(stderr, "Usage: sparkey createlog [-c <none|snappy|zstd> | -b <n>] <file.spl>\n");
   fprintf(stderr, "  Create a new empty log file.\n");
   fprintf(stderr, "Options:\n");
-  fprintf(stderr, "  -c <none|snappy>  Compression algorithm [default: none]\n");
-  fprintf(stderr, "  -b <n>            Compression blocksize [default: %d]\n",
-    SNAPPY_DEFAULT_BLOCKSIZE);
+  fprintf(stderr, "  -c <none|snappy|zstd>  Compression algorithm [default: none]\n");
+  fprintf(stderr, "  -b <n>                 Compression blocksize [default: snappy %d, zstd %d]\n",
+    SNAPPY_DEFAULT_BLOCKSIZE, ZSTD_DEFAULT_BLOCKSIZE);
   fprintf(stderr, "                    [min: %d, max: %d]\n",
-    SNAPPY_MIN_BLOCKSIZE, SNAPPY_MAX_BLOCKSIZE);
+    COMP_MIN_BLOCKSIZE, COMP_MAX_BLOCKSIZE);
 }
 
 static void usage_appendlog() {
@@ -86,13 +87,13 @@ static void usage_appendlog() {
 }
 
 static void usage_rewrite() {
-  fprintf(stderr, "Usage: sparkey rewrite [-c <none|snappy> | -b <n>] <input.spi> <output.spi>\n");
+  fprintf(stderr, "Usage: sparkey rewrite [-c <none|snappy|zstd> | -b <n>] <input.spi> <output.spi>\n");
   fprintf(stderr, "  Iterate over all entries in <file.spi> and create a new index and log pair\n");
   fprintf(stderr, "Options:\n");
-  fprintf(stderr, "  -c <none|snappy>  Compression algorithm [default: same as before]\n");
-  fprintf(stderr, "  -b <n>            Compression blocksize [default: same as before]\n");
+  fprintf(stderr, "  -c <none|snappy|zstd>  Compression algorithm [default: same as before]\n");
+  fprintf(stderr, "  -b <n>                 Compression blocksize [default: same as before]\n");
   fprintf(stderr, "                    [min: %d, max: %d]\n",
-    SNAPPY_MIN_BLOCKSIZE, SNAPPY_MAX_BLOCKSIZE);
+    COMP_MIN_BLOCKSIZE, COMP_MAX_BLOCKSIZE);
 }
 
 static void assert(sparkey_returncode rc) {
@@ -287,7 +288,7 @@ int main(int argc, char * const *argv) {
     opterr = 0;
     optind = 2;
     int opt_char;
-    int block_size = SNAPPY_DEFAULT_BLOCKSIZE;
+    int block_size = 0;
     sparkey_compression_type compression_type = SPARKEY_COMPRESSION_NONE;
     while ((opt_char = getopt (argc, argv, "b:c:")) != -1) {
       switch (opt_char) {
@@ -296,9 +297,9 @@ int main(int argc, char * const *argv) {
           fprintf(stderr, "Block size must be an integer, but was '%s'\n", optarg);
           return 1;
         }
-        if (block_size > SNAPPY_MAX_BLOCKSIZE || block_size < SNAPPY_MIN_BLOCKSIZE) {
+        if (block_size > COMP_MAX_BLOCKSIZE || block_size < COMP_MIN_BLOCKSIZE) {
           fprintf(stderr, "Block size %d, not in range. Max is %d, min is %d\n",
-          block_size, SNAPPY_MAX_BLOCKSIZE, SNAPPY_MIN_BLOCKSIZE);
+          block_size, COMP_MAX_BLOCKSIZE, COMP_MIN_BLOCKSIZE);
           return 1;
         }
         break;
@@ -307,6 +308,14 @@ int main(int argc, char * const *argv) {
           compression_type = SPARKEY_COMPRESSION_NONE;
         } else if (strcmp(optarg, "snappy") == 0) {
           compression_type = SPARKEY_COMPRESSION_SNAPPY;
+          if (block_size == 0) {
+            block_size = SNAPPY_DEFAULT_BLOCKSIZE;
+          }
+        } else if (strcmp(optarg, "zstd") == 0) {
+          compression_type = SPARKEY_COMPRESSION_ZSTD;
+          if (block_size == 0) {
+            block_size = ZSTD_DEFAULT_BLOCKSIZE;
+          }
         } else {
           fprintf(stderr, "Invalid compression type: '%s'\n", optarg);
           return 1;
@@ -392,9 +401,9 @@ int main(int argc, char * const *argv) {
           fprintf(stderr, "Block size must be an integer, but was '%s'\n", optarg);
           return 1;
         }
-        if (block_size > SNAPPY_MAX_BLOCKSIZE || block_size < SNAPPY_MIN_BLOCKSIZE) {
+        if (block_size > COMP_MAX_BLOCKSIZE || block_size < COMP_MIN_BLOCKSIZE) {
           fprintf(stderr, "Block size %d, not in range. Max is %d, min is %d\n",
-          block_size, SNAPPY_MAX_BLOCKSIZE, SNAPPY_MIN_BLOCKSIZE);
+          block_size, COMP_MAX_BLOCKSIZE, COMP_MIN_BLOCKSIZE);
           return 1;
         }
         break;
@@ -404,6 +413,8 @@ int main(int argc, char * const *argv) {
           compression_type = SPARKEY_COMPRESSION_NONE;
         } else if (strcmp(optarg, "snappy") == 0) {
           compression_type = SPARKEY_COMPRESSION_SNAPPY;
+        } else if (strcmp(optarg, "zstd") == 0) {
+          compression_type = SPARKEY_COMPRESSION_ZSTD;
         } else {
           fprintf(stderr, "Invalid compression type: '%s'\n", optarg);
           return 1;
