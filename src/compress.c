@@ -18,6 +18,7 @@
 #include "sparkey.h"
 
 #include <snappy-c.h>
+#include <zstd.h>
 
 
 uint32_t sparkey_snappy_max_compressed_size(uint32_t block_size) {
@@ -44,6 +45,28 @@ sparkey_returncode sparkey_snappy_compress(uint8_t *input, uint32_t uncompressed
   return SPARKEY_INTERNAL_ERROR;
 }
 
+uint32_t sparkey_zstd_max_compressed_size(uint32_t block_size) {
+  return ZSTD_compressBound(block_size);
+}
+
+sparkey_returncode sparkey_zstd_decompress(uint8_t *input, uint32_t compressed_size, uint8_t *output, uint32_t *uncompressed_size) {
+  size_t ret = ZSTD_decompress(output, *uncompressed_size, input, compressed_size);
+  if (ZSTD_isError(ret)) {
+    return SPARKEY_INTERNAL_ERROR;
+  }
+  *uncompressed_size = ret;
+  return SPARKEY_SUCCESS;
+}
+
+sparkey_returncode sparkey_zstd_compress(uint8_t *input, uint32_t uncompressed_size, uint8_t *output, uint32_t *compressed_size) {
+  size_t ret = ZSTD_compress(output, *compressed_size, input, uncompressed_size, ZSTD_CLEVEL_DEFAULT);
+  if (ZSTD_isError(ret)) {
+    return SPARKEY_INTERNAL_ERROR;
+  }
+  *compressed_size = ret;
+  return SPARKEY_SUCCESS;
+}
+
 struct sparkey_compressor sparkey_compressors[] = {
   {
     .max_compressed_size = NULL,
@@ -54,9 +77,9 @@ struct sparkey_compressor sparkey_compressors[] = {
     .compress = sparkey_snappy_compress,
   },
   {
-    .max_compressed_size = NULL,
-    .decompress = NULL,
-    .compress = NULL,
+    .max_compressed_size = sparkey_zstd_max_compressed_size,
+    .decompress = sparkey_zstd_decompress,
+    .compress = sparkey_zstd_compress,
   },
 };
 
