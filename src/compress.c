@@ -21,11 +21,11 @@
 #include <zstd.h>
 
 
-uint32_t sparkey_snappy_max_compressed_size(uint32_t block_size) {
+static uint32_t sparkey_snappy_max_compressed_size(uint32_t block_size) {
   return snappy_max_compressed_length(block_size);
 }
 
-sparkey_returncode sparkey_snappy_decompress(uint8_t *input, uint32_t compressed_size, uint8_t *output, uint32_t *uncompressed_size) {
+static sparkey_returncode sparkey_snappy_decompress(uint8_t *input, uint32_t compressed_size, uint8_t *output, uint32_t *uncompressed_size) {
   size_t rsize = *uncompressed_size;
   snappy_status status = snappy_uncompress((char *) input, compressed_size, (char *) output, &rsize);
   *uncompressed_size = rsize;
@@ -35,7 +35,7 @@ sparkey_returncode sparkey_snappy_decompress(uint8_t *input, uint32_t compressed
   return SPARKEY_INTERNAL_ERROR;
 }
 
-sparkey_returncode sparkey_snappy_compress(uint8_t *input, uint32_t uncompressed_size, uint8_t *output, uint32_t *compressed_size) {
+static sparkey_returncode sparkey_snappy_compress(uint8_t *input, uint32_t uncompressed_size, uint8_t *output, uint32_t *compressed_size) {
   size_t rsize = *compressed_size;
   snappy_status status = snappy_compress((char *) input, uncompressed_size, (char *) output, &rsize);
   *compressed_size = rsize;
@@ -45,11 +45,11 @@ sparkey_returncode sparkey_snappy_compress(uint8_t *input, uint32_t uncompressed
   return SPARKEY_INTERNAL_ERROR;
 }
 
-uint32_t sparkey_zstd_max_compressed_size(uint32_t block_size) {
+static uint32_t sparkey_zstd_max_compressed_size(uint32_t block_size) {
   return ZSTD_compressBound(block_size);
 }
 
-sparkey_returncode sparkey_zstd_decompress(uint8_t *input, uint32_t compressed_size, uint8_t *output, uint32_t *uncompressed_size) {
+static sparkey_returncode sparkey_zstd_decompress(uint8_t *input, uint32_t compressed_size, uint8_t *output, uint32_t *uncompressed_size) {
   size_t ret = ZSTD_decompress(output, *uncompressed_size, input, compressed_size);
   if (ZSTD_isError(ret)) {
     return SPARKEY_INTERNAL_ERROR;
@@ -58,7 +58,7 @@ sparkey_returncode sparkey_zstd_decompress(uint8_t *input, uint32_t compressed_s
   return SPARKEY_SUCCESS;
 }
 
-sparkey_returncode sparkey_zstd_compress(uint8_t *input, uint32_t uncompressed_size, uint8_t *output, uint32_t *compressed_size) {
+static sparkey_returncode sparkey_zstd_compress(uint8_t *input, uint32_t uncompressed_size, uint8_t *output, uint32_t *compressed_size) {
   size_t ret = ZSTD_compress(output, *compressed_size, input, uncompressed_size, ZSTD_CLEVEL_DEFAULT);
   if (ZSTD_isError(ret)) {
     return SPARKEY_INTERNAL_ERROR;
