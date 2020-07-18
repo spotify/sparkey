@@ -217,8 +217,12 @@ static void sparkey_create_uncompressed(int n) {
   sparkey_create(n, SPARKEY_COMPRESSION_NONE, 0);
 }
 
-static void sparkey_create_compressed(int n) {
-  sparkey_create(n, SPARKEY_COMPRESSION_SNAPPY, 1024);
+static void sparkey_create_snappy(int n) {
+  sparkey_create(n, SPARKEY_COMPRESSION_SNAPPY, 4 * 1024);
+}
+
+static void sparkey_create_zstd(int n) {
+  sparkey_create(n, SPARKEY_COMPRESSION_ZSTD, 16 * 1024);
 }
 
 static const char* sparkey_list[] = {"test.spi", "test.spl", NULL};
@@ -231,8 +235,12 @@ static candidate sparkey_candidate_uncompressed = {
   "Sparkey uncompressed", &sparkey_create_uncompressed, &sparkey_randomaccess, &sparkey_files
 };
 
-static candidate sparkey_candidate_compressed = {
-  "Sparkey compressed(1024)", &sparkey_create_compressed, &sparkey_randomaccess, &sparkey_files
+static candidate sparkey_candidate_snappy = {
+  "Sparkey snappy(4K)", &sparkey_create_snappy, &sparkey_randomaccess, &sparkey_files
+};
+
+static candidate sparkey_candidate_zstd = {
+  "Sparkey zstd(16K)", &sparkey_create_zstd, &sparkey_randomaccess, &sparkey_files
 };
 
 /* main */
@@ -273,10 +281,15 @@ int main() {
   test(&sparkey_candidate_uncompressed, 10*1000*1000, 1*1000*1000);
   test(&sparkey_candidate_uncompressed, 100*1000*1000, 1*1000*1000);
 
-  test(&sparkey_candidate_compressed, 1000, 1*1000*1000);
-  test(&sparkey_candidate_compressed, 1000*1000, 1*1000*1000);
-  test(&sparkey_candidate_compressed, 10*1000*1000, 1*1000*1000);
-  test(&sparkey_candidate_compressed, 100*1000*1000, 1*1000*1000);
+  test(&sparkey_candidate_snappy, 1000, 1*1000*1000);
+  test(&sparkey_candidate_snappy, 1000*1000, 1*1000*1000);
+  test(&sparkey_candidate_snappy, 10*1000*1000, 1*1000*1000);
+  test(&sparkey_candidate_snappy, 100*1000*1000, 1*1000*1000);
+
+  test(&sparkey_candidate_zstd, 1000, 1*1000*1000);
+  test(&sparkey_candidate_zstd, 1000*1000, 1*1000*1000);
+  test(&sparkey_candidate_zstd, 10*1000*1000, 1*1000*1000);
+  test(&sparkey_candidate_zstd, 100*1000*1000, 1*1000*1000);
 
   return 0;
 }
