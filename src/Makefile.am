@@ -6,7 +6,7 @@ MurmurHash3.h buf.c hashalgorithms.c hashiter.c hashwriter.c \
 logreader.c returncodes.c util.c buf.h hashalgorithms.h hashiter.h \
 sparkey.h util.h endiantools.c \
 hashheader.c hashreader.c logheader.c logwriter.c MurmurHash3.c \
-sparkey-internal.h
+sparkey-internal.h compress.c
 
 pkginclude_HEADERS = sparkey.h
 
