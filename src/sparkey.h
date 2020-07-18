@@ -266,7 +266,8 @@ typedef struct sparkey_logwriter sparkey_logwriter;
 
 typedef enum {
   SPARKEY_COMPRESSION_NONE,
-  SPARKEY_COMPRESSION_SNAPPY
+  SPARKEY_COMPRESSION_SNAPPY,
+  SPARKEY_COMPRESSION_ZSTD
 } sparkey_compression_type;
 
 typedef enum {

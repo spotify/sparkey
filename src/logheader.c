@@ -22,7 +22,7 @@
 #include "endiantools.h"
 #include "util.h"
 
-static char * compression_types[] = { "Uncompressed", "Snappy", NULL };
+static char * compression_types[] = { "Uncompressed", "Snappy", "Zstd", NULL };
 
 void print_logheader(sparkey_logheader *header) {
   printf("Log file version %d.%d\n", header->major_version,
@@ -59,7 +59,7 @@ static sparkey_returncode logheader_version0(sparkey_logheader *header, FILE *fp
   if (header->num_deletes > header->data_end) {
     return SPARKEY_LOG_HEADER_CORRUPT;
   }
-  if (header->compression_type > SPARKEY_COMPRESSION_SNAPPY) {
+  if (header->compression_type > SPARKEY_COMPRESSION_ZSTD) {
     return SPARKEY_LOG_HEADER_CORRUPT;
   }
   return SPARKEY_SUCCESS;
