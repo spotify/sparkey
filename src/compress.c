@@ -59,7 +59,7 @@ static sparkey_returncode sparkey_zstd_decompress(uint8_t *input, uint32_t compr
 }
 
 static sparkey_returncode sparkey_zstd_compress(uint8_t *input, uint32_t uncompressed_size, uint8_t *output, uint32_t *compressed_size) {
-  size_t ret = ZSTD_compress(output, *compressed_size, input, uncompressed_size, ZSTD_CLEVEL_DEFAULT);
+  size_t ret = ZSTD_compress(output, *compressed_size, input, uncompressed_size, 3);
   if (ZSTD_isError(ret)) {
     return SPARKEY_INTERNAL_ERROR;
   }
