@@ -222,7 +222,7 @@ static void sparkey_create_snappy(int n) {
 }
 
 static void sparkey_create_zstd(int n) {
-  sparkey_create(n, SPARKEY_COMPRESSION_ZSTD, 16 * 1024);
+  sparkey_create(n, SPARKEY_COMPRESSION_ZSTD, 4 * 1024);
 }
 
 static const char* sparkey_list[] = {"test.spi", "test.spl", NULL};
@@ -240,7 +240,7 @@ static candidate sparkey_candidate_snappy = {
 };
 
 static candidate sparkey_candidate_zstd = {
-  "Sparkey zstd(16K)", &sparkey_create_zstd, &sparkey_randomaccess, &sparkey_files
+  "Sparkey zstd(4K)", &sparkey_create_zstd, &sparkey_randomaccess, &sparkey_files
 };
 
 /* main */

@@ -28,8 +28,7 @@
 
 #define MINIMUM_CAPACITY (1<<8)
 #define MAXIMUM_CAPACITY (1<<28)
-#define SNAPPY_DEFAULT_BLOCKSIZE (1<<12)
-#define ZSTD_DEFAULT_BLOCKSIZE (1<<14)
+#define COMP_DEFAULT_BLOCKSIZE (1<<12)
 #define COMP_MAX_BLOCKSIZE (1<<30)
 #define COMP_MIN_BLOCKSIZE (1<<4)
 
@@ -71,8 +70,8 @@ static void usage_createlog() {
   fprintf(stderr, "  Create a new empty log file.\n");
   fprintf(stderr, "Options:\n");
   fprintf(stderr, "  -c <none|snappy|zstd>  Compression algorithm [default: none]\n");
-  fprintf(stderr, "  -b <n>                 Compression blocksize [default: snappy %d, zstd %d]\n",
-    SNAPPY_DEFAULT_BLOCKSIZE, ZSTD_DEFAULT_BLOCKSIZE);
+  fprintf(stderr, "  -b <n>                 Compression blocksize [default: %d]\n",
+    COMP_DEFAULT_BLOCKSIZE);
   fprintf(stderr, "                    [min: %d, max: %d]\n",
     COMP_MIN_BLOCKSIZE, COMP_MAX_BLOCKSIZE);
 }
@@ -288,7 +287,7 @@ int main(int argc, char * const *argv) {
     opterr = 0;
     optind = 2;
     int opt_char;
-    int block_size = 0;
+    int block_size = COMP_DEFAULT_BLOCKSIZE;
     sparkey_compression_type compression_type = SPARKEY_COMPRESSION_NONE;
     while ((opt_char = getopt (argc, argv, "b:c:")) != -1) {
       switch (opt_char) {
@@ -308,14 +307,8 @@ int main(int argc, char * const *argv) {
           compression_type = SPARKEY_COMPRESSION_NONE;
         } else if (strcmp(optarg, "snappy") == 0) {
           compression_type = SPARKEY_COMPRESSION_SNAPPY;
-          if (block_size == 0) {
-            block_size = SNAPPY_DEFAULT_BLOCKSIZE;
-          }
         } else if (strcmp(optarg, "zstd") == 0) {
           compression_type = SPARKEY_COMPRESSION_ZSTD;
-          if (block_size == 0) {
-            block_size = ZSTD_DEFAULT_BLOCKSIZE;
-          }
         } else {
           fprintf(stderr, "Invalid compression type: '%s'\n", optarg);
           return 1;
