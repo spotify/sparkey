@@ -237,17 +237,19 @@ int main() {
   verify(SPARKEY_COMPRESSION_NONE, 0, 0, 0, 0, 100);
   verify(SPARKEY_COMPRESSION_NONE, 0, 0, 100, 10, 5);
 
-  verify(SPARKEY_COMPRESSION_SNAPPY, 10, 0, 100, 0, 0);
-  verify(SPARKEY_COMPRESSION_SNAPPY, 20, 0, 100, 0, 0);
-  verify(SPARKEY_COMPRESSION_SNAPPY, 100, 0, 100, 0, 0);
-  verify(SPARKEY_COMPRESSION_SNAPPY, 100, 0, 1000, 0, 0);
-  verify(SPARKEY_COMPRESSION_SNAPPY, 1000, 0, 1000, 0, 0);
+  for (sparkey_compression_type t = SPARKEY_COMPRESSION_SNAPPY; t <= SPARKEY_COMPRESSION_ZSTD; t++) {
+    verify(t, 10, 0, 100, 0, 0);
+    verify(t, 20, 0, 100, 0, 0);
+    verify(t, 100, 0, 100, 0, 0);
+    verify(t, 100, 0, 1000, 0, 0);
+    verify(t, 1000, 0, 1000, 0, 0);
 
-  verify(SPARKEY_COMPRESSION_SNAPPY, 100, 0, 1000, 100, 0);
-  verify(SPARKEY_COMPRESSION_SNAPPY, 100, 0, 1000, 100, 50);
+    verify(t, 100, 0, 1000, 100, 0);
+    verify(t, 100, 0, 1000, 100, 50);
 
-  verify(SPARKEY_COMPRESSION_SNAPPY, 100, 4, 1000, 0, 0);
-  verify(SPARKEY_COMPRESSION_SNAPPY, 100, 8, 1000, 0, 0);
+    verify(t, 100, 4, 1000, 0, 0);
+    verify(t, 100, 8, 1000, 0, 0);
+  }
 
   printf("Success!\n");
 }

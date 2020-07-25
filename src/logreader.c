@@ -21,8 +21,6 @@
 #include <fcntl.h>
 #include <sys/mman.h>
 
-#include <snappy-c.h>
-
 #include "sparkey.h"
 #include "sparkey-internal.h"
 #include "logheader.h"
@@ -168,19 +166,16 @@ sparkey_returncode sparkey_logiter_create(sparkey_logiter **iter_ref, sparkey_lo
   iter->block_len = 0;
   iter->state = SPARKEY_ITER_NEW;
 
-  switch (log->header.compression_type) {
-  case SPARKEY_COMPRESSION_NONE:
+  if (log->header.compression_type == SPARKEY_COMPRESSION_NONE) {
     iter->compression_buf_allocated = 0;
-    break;
-  case SPARKEY_COMPRESSION_SNAPPY:
+  } else if (sparkey_uses_compressor(log->header.compression_type)) {
     iter->compression_buf_allocated = 1;
     iter->compression_buf = malloc(log->header.compression_block_size);
     if (iter->compression_buf == NULL) {
       free(iter);
       return SPARKEY_INTERNAL_ERROR;
     }
-    break;
-  default:
+  } else {
     free(iter);
     return SPARKEY_INTERNAL_ERROR;
   }
@@ -221,24 +216,19 @@ static sparkey_returncode seekblock(sparkey_logiter *iter, sparkey_logreader *lo
     iter->block_len = log->data_len - position;
     return SPARKEY_SUCCESS;
   }
-  if (log->header.compression_type == SPARKEY_COMPRESSION_SNAPPY) {
+  if (sparkey_uses_compressor(log->header.compression_type)) {
     uint64_t pos = position;
-    // TODO: assert that size_t >= uint64_t
-    size_t compressed_size = read_vlq(log->data, &pos);
+    // TODO: assert that we're not reading > uint32_t
+    uint32_t compressed_size = read_vlq(log->data, &pos);
     uint64_t next_pos = pos + compressed_size;
-    const char *input = (char *) &log->data[pos];
+    uint32_t uncompressed_size = log->header.compression_block_size;
 
-    size_t uncompressed_size = log->header.compression_block_size;
-    snappy_status status = snappy_uncompress(input, compressed_size, (char *) iter->compression_buf, &uncompressed_size);
-    switch (status) {
-    case SNAPPY_OK: break;
-    case SNAPPY_INVALID_INPUT:
-      return SPARKEY_INTERNAL_ERROR;
-    case SNAPPY_BUFFER_TOO_SMALL:
-      return SPARKEY_INTERNAL_ERROR;
-    default:
-      return SPARKEY_INTERNAL_ERROR;
+    sparkey_returncode ret = sparkey_compressors[log->header.compression_type].decompress(
+      &log->data[pos], compressed_size, iter->compression_buf, &uncompressed_size);
+    if (ret != SPARKEY_SUCCESS) {
+      return ret;
     }
+
     iter->block_position = position;
     iter->next_block_position = next_pos;
     iter->block_len = uncompressed_size;
