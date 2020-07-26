@@ -166,9 +166,7 @@ sparkey_returncode sparkey_logiter_create(sparkey_logiter **iter_ref, sparkey_lo
   iter->block_len = 0;
   iter->state = SPARKEY_ITER_NEW;
 
-  if (log->header.compression_type == SPARKEY_COMPRESSION_NONE) {
-    iter->compression_buf_allocated = 0;
-  } else if (sparkey_uses_compressor(log->header.compression_type)) {
+  if (sparkey_uses_compressor(log->header.compression_type)) {
     iter->compression_buf_allocated = 1;
     iter->compression_buf = malloc(log->header.compression_block_size);
     if (iter->compression_buf == NULL) {
@@ -176,8 +174,7 @@ sparkey_returncode sparkey_logiter_create(sparkey_logiter **iter_ref, sparkey_lo
       return SPARKEY_INTERNAL_ERROR;
     }
   } else {
-    free(iter);
-    return SPARKEY_INTERNAL_ERROR;
+    iter->compression_buf_allocated = 0;
   }
 
   *iter_ref = iter;
@@ -209,13 +206,6 @@ static sparkey_returncode seekblock(sparkey_logiter *iter, sparkey_logreader *lo
   if (iter->block_position == position) {
     return SPARKEY_SUCCESS;
   }
-  if (log->header.compression_type == SPARKEY_COMPRESSION_NONE) {
-    iter->compression_buf = &log->data[position];
-    iter->block_position = position;
-    iter->next_block_position = log->header.data_end;
-    iter->block_len = log->data_len - position;
-    return SPARKEY_SUCCESS;
-  }
   if (sparkey_uses_compressor(log->header.compression_type)) {
     uint64_t pos = position;
     // TODO: assert that we're not reading > uint32_t
@@ -232,10 +222,13 @@ static sparkey_returncode seekblock(sparkey_logiter *iter, sparkey_logreader *lo
     iter->block_position = position;
     iter->next_block_position = next_pos;
     iter->block_len = uncompressed_size;
-    return SPARKEY_SUCCESS;
+  } else {
+    iter->compression_buf = &log->data[position];
+    iter->block_position = position;
+    iter->next_block_position = log->header.data_end;
+    iter->block_len = log->data_len - position;
   }
-
-  return SPARKEY_INTERNAL_ERROR;
+  return SPARKEY_SUCCESS;
 }
 
 sparkey_returncode sparkey_logiter_seek(sparkey_logiter *iter, sparkey_logreader *log, uint64_t position) {
