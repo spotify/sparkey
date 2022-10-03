@@ -102,10 +102,11 @@ void sparkey_hash_close(sparkey_hashreader **reader_ref) {
     return;
   }
 
+  sparkey_logreader_close_nodealloc(&reader->log);
+
   if (reader->open_status != MAGIC_VALUE_HASHREADER) {
     return;
   }
-  sparkey_logreader_close_nodealloc(&reader->log);
 
   reader->open_status = 0;
   if (reader->data != NULL) {
