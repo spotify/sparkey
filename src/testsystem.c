@@ -229,6 +229,33 @@ void verify(sparkey_compression_type compression, int blocksize, int hashsize, i
   sparkey_logiter_close(&myiter);
 }
 
+void verify_files_closed() {
+  // Verify that SPARKEY_FILE_IDENTIFIER_MISMATCH is returned appropriately.
+  sparkey_logwriter *writer;
+  assert_equals(SPARKEY_SUCCESS, sparkey_logwriter_create(&writer, "test1.spl",
+    SPARKEY_COMPRESSION_NONE, 4096));
+  assert_equals(SPARKEY_SUCCESS, sparkey_logwriter_close(&writer));
+  assert_equals(1, writer == NULL);
+
+  assert_equals(SPARKEY_SUCCESS, sparkey_logwriter_create(&writer, "test2.spl",
+    SPARKEY_COMPRESSION_NONE, 4096));
+  assert_equals(SPARKEY_SUCCESS, sparkey_logwriter_close(&writer));
+  assert_equals(1, writer == NULL);
+
+  // Now create a hash for test1.
+  assert_equals(SPARKEY_SUCCESS, sparkey_hash_write("test1.spi", "test1.spl", 0));
+
+  // and try to open the wrong files:
+  sparkey_hashreader* reader;
+  sparkey_returncode rc = sparkey_hash_open(
+    &reader,
+    "test1.spi",
+    "test2.spl"
+  );
+
+  assert_equals(SPARKEY_FILE_IDENTIFIER_MISMATCH, rc);
+}
+
 int main() {
   verify(SPARKEY_COMPRESSION_NONE, 0, 0, 0, 0, 0);
   verify(SPARKEY_COMPRESSION_NONE, 0, 0, 1, 0, 0);
@@ -250,6 +277,8 @@ int main() {
     verify(t, 100, 4, 1000, 0, 0);
     verify(t, 100, 8, 1000, 0, 0);
   }
+
+  verify_files_closed();
 
   printf("Success!\n");
 }
