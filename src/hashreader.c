@@ -39,6 +39,8 @@ sparkey_returncode sparkey_hash_open(sparkey_hashreader **reader_ref, const char
     return SPARKEY_INTERNAL_ERROR;
   }
 
+  reader->open_status = 0;
+
   TRY(sparkey_load_hashheader(&reader->header, hash_filename), free_reader);
   TRY(sparkey_logreader_open_noalloc(&reader->log, log_filename), free_reader);
   if (reader->header.file_identifier != reader->log.header.file_identifier) {
@@ -104,17 +106,16 @@ void sparkey_hash_close(sparkey_hashreader **reader_ref) {
 
   sparkey_logreader_close_nodealloc(&reader->log);
 
-  if (reader->open_status != MAGIC_VALUE_HASHREADER) {
-    return;
+  if (reader->open_status == MAGIC_VALUE_HASHREADER) {
+    reader->open_status = 0;
+    if (reader->data != NULL) {
+      munmap(reader->data, reader->data_len);
+      reader->data = NULL;
+    }
+    close(reader->fd);
+    reader->fd = -1;
   }
 
-  reader->open_status = 0;
-  if (reader->data != NULL) {
-    munmap(reader->data, reader->data_len);
-    reader->data = NULL;
-  }
-  close(reader->fd);
-  reader->fd = -1;
   free(reader);
   *reader_ref = NULL;
 }
